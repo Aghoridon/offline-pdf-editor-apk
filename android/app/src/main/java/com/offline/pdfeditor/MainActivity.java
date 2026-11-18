@@ -15,12 +15,14 @@ import java.io.OutputStream;
 public class MainActivity extends BridgeActivity {
   @Override public void onCreate(Bundle s) {
     super.onCreate(s);
-    bridge.getWebView().addJavascriptInterface(new BlobDownloader(), "AndroidBlobDownloader");
-    bridge.getWebView().setDownloadListener((url, ua, cd, mt, cl) -> {
-      if (url.startsWith("blob:")) {
-        bridge.getWebView().evaluateJavascript("javascript:(function(){fetch('"+url+"').then(r=>r.blob()).then(b=>{var r=new FileReader();r.onloadend=function(){AndroidBlobDownloader.saveBase64(r.result,window.__lastPdfName||'Edited.pdf');};r.readAsDataURL(b);});})()", null);
-      }
-    });
+    if (this.getBridge() != null && this.getBridge().getWebView() != null) {
+      this.getBridge().getWebView().addJavascriptInterface(new BlobDownloader(), "AndroidBlobDownloader");
+      this.getBridge().getWebView().setDownloadListener((url, ua, cd, mt, cl) -> {
+        if (url.startsWith("blob:")) {
+          this.getBridge().getWebView().evaluateJavascript("javascript:(function(){fetch('"+url+"').then(r=>r.blob()).then(b=>{var r=new FileReader();r.onloadend=function(){AndroidBlobDownloader.saveBase64(r.result,window.__lastPdfName||'Edited.pdf');};r.readAsDataURL(b);});})()", null);
+        }
+      });
+    }
   }
   class BlobDownloader {
     @JavascriptInterface public void saveBase64(String b64, String fn) {
