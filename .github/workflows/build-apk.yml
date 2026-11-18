@@ -10,7 +10,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -19,7 +19,7 @@ jobs:
       - run: npm install
       - run: npx cap sync android
       - run: chmod +x android/gradlew
-      - run: cd android && ./gradlew assembleDebug
+      - run: cd android && ./gradlew assembleDebug --stacktrace
       - uses: actions/upload-artifact@v4
         with:
           name: Offline-PDF-Editor-Pro-APK
