@@ -1,0 +1,2985 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>ऑफ़लाइन PDF एडिटर प्रो (Hindi + OCR + Letterhead)</title>
+
+  <!-- Local Hindi Font Declaration -->
+  <style>
+    @font-face {
+      font-family: 'NotoSansDevanagariLocal';
+      src: url('offline-assets/fonts/NotoSansDevanagari-Regular.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root {
+      --bg-app: #0f172a;
+      --bg-panel: #1e293b;
+      --bg-panel-alt: #273549;
+      --bg-workspace: #334155;
+      --border: #3b4c66;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --radius: 8px;
+      --font-ui: 'NotoSansDevanagariLocal', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-ui);
+      background: var(--bg-app);
+      color: var(--text-main);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* Top Header & File Bar */
+    .topbar {
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      z-index: 30;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 16px;
+      color: #fff;
+    }
+
+    .status-pill {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+
+    .status-pill.warn {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border-color: rgba(245, 158, 11, 0.4);
+    }
+
+    .btn-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    button, .btn {
+      font-family: var(--font-ui);
+      background: var(--bg-panel-alt);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      padding: 6px 11px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    button:hover:not(:disabled) {
+      background: #334663;
+      border-color: #64748b;
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    button.primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+    }
+
+    button.success {
+      background: var(--success);
+      border-color: var(--success);
+      color: #06281e;
+      font-weight: 700;
+    }
+
+    button.danger {
+      background: rgba(239, 68, 68, 0.18);
+      border-color: rgba(239, 68, 68, 0.5);
+      color: #fca5a5;
+    }
+
+    button.active-tool {
+      background: var(--accent);
+      border-color: #93c5fd;
+      color: #fff;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.35);
+    }
+
+    /* Tool Ribbon */
+    .tool-ribbon {
+      background: #162032;
+      border-bottom: 1px solid var(--border);
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      z-index: 25;
+    }
+
+    .divider-v {
+      width: 1px;
+      height: 22px;
+      background: var(--border);
+      margin: 0 4px;
+      flex-shrink: 0;
+    }
+
+    /* Contextual Properties Bar */
+    .props-bar {
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      min-height: 40px;
+      z-index: 20;
+    }
+
+    .prop-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .prop-item label {
+      color: var(--text-muted);
+      font-size: 11.5px;
+    }
+
+    input[type="text"], input[type="number"], input[type="password"], select, textarea {
+      font-family: var(--font-ui);
+      background: var(--bg-app);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 4px 8px;
+      font-size: 12.5px;
+    }
+
+    input[type="color"] {
+      width: 28px;
+      height: 26px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: transparent;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    /* Main Layout */
+    .main-container {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Left Sidebar - Thumbnails */
+    .sidebar {
+      width: 215px;
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .sidebar-header {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .thumb-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .thumb-card {
+      background: var(--bg-panel-alt);
+      border: 2px solid transparent;
+      border-radius: 8px;
+      padding: 7px;
+      cursor: pointer;
+      transition: 0.15s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .thumb-card.active {
+      border-color: var(--accent);
+      background: #283a55;
+    }
+
+    .thumb-card canvas {
+      max-width: 100%;
+      height: auto;
+      background: #fff;
+      border-radius: 3px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+
+    .thumb-meta {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .thumb-actions {
+      display: flex;
+      gap: 3px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .thumb-actions button {
+      padding: 2px 5px;
+      font-size: 11px;
+    }
+
+    /* Center Workspace */
+    .workspace {
+      flex: 1;
+      background: var(--bg-workspace);
+      overflow: auto;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 24px;
+      position: relative;
+    }
+
+    .canvas-stage {
+      position: relative;
+      background: #ffffff;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.55);
+      touch-action: none;
+    }
+
+    #editorCanvas {
+      display: block;
+      touch-action: none;
+    }
+
+    /* Empty State */
+    .empty-state {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+      background: var(--bg-workspace);
+      z-index: 10;
+    }
+
+    .empty-box {
+      max-width: 480px;
+      background: var(--bg-panel);
+      border: 2px dashed var(--border);
+      border-radius: 14px;
+      padding: 32px 24px;
+    }
+
+    /* Modals */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.75);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 16px;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 560px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.65);
+    }
+
+    .modal-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .modal-body {
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      font-size: 13px;
+    }
+
+    .modal-footer {
+      padding: 10px 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      background: #172133;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .form-group.full {
+      grid-column: 1 / -1;
+    }
+
+    .tab-bar {
+      display: flex;
+      gap: 6px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    .sig-pad-wrap {
+      background: #fff;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    .progress-bar-wrap {
+      width: 100%;
+      height: 10px;
+      background: var(--bg-app);
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--success);
+      transition: width 0.2s;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 18px;
+      right: 18px;
+      background: #0f172a;
+      color: #fff;
+      border: 1px solid var(--accent);
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      z-index: 200;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 135px;
+      }
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+      .workspace {
+        padding: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Hidden File Inputs -->
+  <input type="file" id="inputOpenPdf" accept="application/pdf" hidden />
+  <input type="file" id="inputMergePdf" accept="application/pdf" multiple hidden />
+  <input type="file" id="inputInsertImg" accept="image/png,image/jpeg,image/webp" hidden />
+  <input type="file" id="inputCustomFont" accept=".ttf,.otf" hidden />
+
+  <!-- Top Bar -->
+  <header class="topbar">
+    <div class="brand">
+      <span>📄 ऑफ़लाइन PDF एडिटर प्रो</span>
+      <span id="offlineStatusPill" class="status-pill">जाँच हो रही है...</span>
+    </div>
+
+    <div class="btn-group">
+      <button onclick="document.getElementById('inputOpenPdf').click()" class="primary">📂 PDF खोलें</button>
+      <button onclick="addBlankPage()">➕ खाली पेज</button>
+      <button onclick="document.getElementById('inputMergePdf').click()">🔗 मर्ज (Merge)</button>
+      <button onclick="openSplitModal()">✂️ स्प्लिट / निकालें</button>
+      <div class="divider-v"></div>
+      <button id="btnUndo" onclick="undo()" title="Undo">↩️</button>
+      <button id="btnRedo" onclick="redo()" title="Redo">↪️</button>
+      <div class="divider-v"></div>
+      <button onclick="saveDraftToIndexedDB()">💾 ड्राफ्ट सेव</button>
+      <button onclick="openDraftsModal()">📁 सेव ड्राफ्ट</button>
+      <button onclick="openExportModal()" class="success">⬇️ PDF डाउनलोड</button>
+    </div>
+  </header>
+
+  <!-- Main Tools Ribbon -->
+  <nav class="tool-ribbon" id="toolRibbon">
+    <button data-tool="select" class="active-tool" onclick="setTool('select')">🖱️ चुनें / मूव</button>
+    <button data-tool="text" onclick="setTool('text')">🔤 हिंदी/Eng टेक्स्ट</button>
+    <button data-tool="whiteout" onclick="setTool('whiteout')">⬜ व्हाइटआउट (छिपाएं)</button>
+    <button data-tool="highlight" onclick="setTool('highlight')">🖍️ हाइलाइट</button>
+    <button data-tool="pen" onclick="setTool('pen')">✍️ पेन ड्राइंग</button>
+    <button data-tool="rect" onclick="setTool('rect')">▭ आयत</button>
+    <button data-tool="circle" onclick="setTool('circle')">◯ गोला</button>
+    <button data-tool="arrow" onclick="setTool('arrow')">↗️ तीर (Arrow)</button>
+    <div class="divider-v"></div>
+    <button onclick="openSignatureModal()">🖋️ हस्ताक्षर (Sign)</button>
+    <button onclick="document.getElementById('inputInsertImg').click()">🖼️ इमेज / मुहर / QR</button>
+    <button onclick="openLetterheadModal()">🏛️ लेटरहेड</button>
+    <button onclick="openWatermarkModal()">💧 वॉटरमार्क व पेज #</button>
+    <div class="divider-v"></div>
+    <button onclick="openOcrModal()" style="border-color:#10b981; color:#6ee7b7;">🔍 ऑफ़लाइन OCR (हिंदी+Eng)</button>
+  </nav>
+
+  <!-- Contextual Properties Bar -->
+  <div class="props-bar" id="propsBar">
+    <div class="prop-item">
+      <label>ज़ूम:</label>
+      <button onclick="changeZoom(-0.15)">−</button>
+      <span id="zoomLabel" style="min-width:44px; text-align:center;">100%</span>
+      <button onclick="changeZoom(0.15)">+</button>
+    </div>
+
+    <div class="divider-v"></div>
+
+    <div class="prop-item" id="propFontWrap">
+      <label>फ़ॉन्ट:</label>
+      <select id="propFontFamily" onchange="updateSelectedStyle()">
+        <option value="NotoSansDevanagariLocal">Noto Sans हिंदी (Devanagari)</option>
+        <option value="serif">Serif (पारंपरिक)</option>
+        <option value="sans-serif">Sans-Serif (आधुनिक)</option>
+        <option value="monospace">Monospace</option>
+      </select>
+      <button onclick="document.getElementById('inputCustomFont').click()" title="कस्टम .ttf हिंदी/अंग्रेज़ी फ़ॉन्ट लोड करें">+ .TTF फ़ॉन्ट</button>
+    </div>
+
+    <div class="prop-item" id="propSizeWrap">
+      <label>साइज:</label>
+      <input type="number" id="propFontSize" value="18" min="8" max="120" style="width:58px;" onchange="updateSelectedStyle()" />
+    </div>
+
+    <div class="prop-item">
+      <label>रंग:</label>
+      <input type="color" id="propColor" value="#111827" onchange="updateSelectedStyle()" />
+    </div>
+
+    <div class="prop-item" id="propBgWrap">
+      <label>बैकग्राउंड:</label>
+      <input type="color" id="propBgColor" value="#ffffff" onchange="updateSelectedStyle()" />
+      <label style="display:flex;align-items:center;gap:3px;cursor:pointer;">
+        <input type="checkbox" id="propHasBg" onchange="updateSelectedStyle()" /> भरें
+      </label>
+    </div>
+
+    <div class="prop-item" id="propStrokeWrap">
+      <label>मोटाई:</label>
+      <input type="number" id="propStrokeWidth" value="3" min="1" max="30" style="width:52px;" onchange="updateSelectedStyle()" />
+    </div>
+
+    <div class="prop-item" id="propBoldWrap">
+      <button id="btnBold" onclick="toggleBold()" style="font-weight:bold;">B</button>
+      <button id="btnItalic" onclick="toggleItalic()" style="font-style:italic;">I</button>
+    </div>
+
+    <div class="prop-item" id="selectedActions" style="display:none; margin-left:auto;">
+      <button onclick="editSelectedText()">✏️ टेक्स्ट बदलें</button>
+      <button onclick="duplicateSelected()">📋 कॉपी</button>
+      <button onclick="deleteSelected()" class="danger">🗑️ हटाएं</button>
+    </div>
+  </div>
+
+  <!-- Main Workspace Container -->
+  <div class="main-container">
+    <!-- Left Page Thumbnails Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <span>पेज (<span id="pageCountLabel">0</span>)</span>
+        <button onclick="addBlankPage()" style="padding:2px 7px; font-size:11px;">+ पेज</button>
+      </div>
+      <div class="thumb-list" id="thumbList"></div>
+    </aside>
+
+    <!-- Center Editor Canvas -->
+    <main class="workspace" id="workspace">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-box">
+          <h2 style="margin-bottom:8px;">ऑफ़लाइन PDF एडिटर में स्वागत है</h2>
+          <p style="color:var(--text-muted); font-size:13px; line-height:1.6; margin-bottom:18px;">
+            आपकी सभी फ़ाइलें 100% आपके डिवाइस के अंदर ही प्रोसेस होती हैं।<br/>
+            शुरू करने के लिए कोई PDF खोलें या नया खाली पेज बनाएं।
+          </p>
+          <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+            <button onclick="document.getElementById('inputOpenPdf').click()" class="primary">📂 कंप्यूटर/मोबाइल से PDF चुनें</button>
+            <button onclick="addBlankPage()">📄 नया खाली A4 पेज बनाएं</button>
+            <button onclick="openDraftsModal()">📁 सेव किए गए ड्राफ्ट देखें</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="canvas-stage" id="canvasStage" style="display:none;">
+        <canvas id="editorCanvas"></canvas>
+      </div>
+    </main>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- 1. Text Input / Edit Modal -->
+  <div class="modal-backdrop" id="modalText">
+    <div class="modal" style="max-width:460px;">
+      <div class="modal-header">
+        <span>🔤 हिंदी / अंग्रेज़ी टेक्स्ट लिखें</span>
+        <button onclick="closeModal('modalText')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>टेक्स्ट लिखें (मल्टी-लाइन सपोर्ट):</label>
+          <textarea id="textModalInput" rows="4" placeholder="यहाँ हिंदी या अंग्रेज़ी में लिखें..."></textarea>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>फ़ॉन्ट साइज (px):</label>
+            <input type="number" id="textModalSize" value="18" min="8" max="120" />
+          </div>
+          <div class="form-group">
+            <label>टेक्स्ट रंग:</label>
+            <input type="color" id="textModalColor" value="#111827" style="width:100%; height:32px;" />
+          </div>
+          <div class="form-group full">
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+              <input type="checkbox" id="textModalWhiteout" />
+              पुराने टेक्स्ट को ढकने के लिए पीछे सफेद बैकग्राउंड (Whiteout Box) लगाएं
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button onclick="closeModal('modalText')">रद्द करें</button>
+        <button class="primary" onclick="confirmTextModal()">✅ पेज पर लगाएं</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Signature Modal -->
+  <div class="modal-backdrop" id="modalSignature">
+    <div class="modal" style="max-width:500px;">
+      <div class="modal-header">
+        <span>🖋️ डिजिटल हस्ताक्षर (E-Signature)</span>
+        <button onclick="closeModal('modalSignature')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="tab-bar">
+          <button id="sigTabDrawBtn" class="primary" onclick="switchSigTab('draw')">✍️ स्क्रीन पर साइन करें</button>
+          <button id="sigTabUploadBtn" onclick="switchSigTab('upload')">🖼️ साइन की फोटो अपलोड करें</button>
+        </div>
+
+        <div id="sigDrawSection">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+            <span style="font-size:12px; color:var(--text-muted);">नीचे सफेद बॉक्स में उंगली या माउस से हस्ताक्षर करें:</span>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <label style="font-size:12px;">स्याही:</label>
+              <input type="color" id="sigInkColor" value="#0f172a" />
+              <button onclick="clearSignaturePad()">साफ़ करें</button>
+            </div>
+          </div>
+          <div class="sig-pad-wrap">
+            <canvas id="sigPadCanvas" width="460" height="180" style="width:100%; height:180px; display:block;"></canvas>
+          </div>
+        </div>
+
+        <div id="sigUploadSection" style="display:none;">
+          <p style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">
+            हस्ताक्षर की फोटो चुनें (सफेद बैकग्राउंड स्वतः पारदर्शी करने का विकल्प उपलब्ध है):
+          </p>
+          <input type="file" id="sigFileInput" accept="image/*" />
+          <label style="display:flex; align-items:center; gap:6px; margin-top:10px; cursor:pointer;">
+            <input type="checkbox" id="sigRemoveWhiteBg" checked /> सफेद बैकग्राउंड को ऑटो-ट्रांसपेरेंट करें
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button onclick="closeModal('modalSignature')">बंद करें</button>
+        <button class="primary" onclick="insertSignatureToPage()">✅ हस्ताक्षर जोड़ें</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Letterhead Modal (Designer + Image Upload) -->
+  <div class="modal-backdrop" id="modalLetterhead">
+    <div class="modal" style="max-width:580px;">
+      <div class="modal-header">
+        <span>🏛️ कस्टम लेटरहेड सेटअप</span>
+        <button onclick="closeModal('modalLetterhead')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="tab-bar">
+          <button id="lhTabDesignBtn" class="primary" onclick="switchLhTab('design')">🎨 इन-बिल्ट लेटरहेड डिज़ाइनर</button>
+          <button id="lhTabImgBtn" onclick="switchLhTab('image')">🖼️ बनी-बनाई लेटरहेड इमेज</button>
+        </div>
+
+        <!-- Designer Mode -->
+        <div id="lhDesignSection" class="form-grid">
+          <div class="form-group full">
+            <label>संस्था / कार्यालय / आपका शीर्षक (हिंदी या अंग्रेज़ी):</label>
+            <input type="text" id="lhTitle" placeholder="उदा. श्री ज्योतिष एवं वास्तु अनुसंधान केंद्र" />
+          </div>
+          <div class="form-group full">
+            <label>उप-शीर्षक / विशेषता:</label>
+            <input type="text" id="lhSubtitle" placeholder="उदा. वैदिक कुंडली, फलित ज्योतिष एवं परामर्श" />
+          </div>
+          <div class="form-group">
+            <label>पता (Address):</label>
+            <input type="text" id="lhAddress" placeholder="शहर, राज्य, पिन कोड" />
+          </div>
+          <div class="form-group">
+            <label>संपर्क (फोन / ईमेल):</label>
+            <input type="text" id="lhContact" placeholder="+91-98XXXXXXXX | email@domain.com" />
+          </div>
+          <div class="form-group">
+            <label>लोगो इमेज (वैकल्पिक):</label>
+            <input type="file" id="lhLogoInput" accept="image/*" />
+          </div>
+          <div class="form-group">
+            <label>मुख्य थीम रंग:</label>
+            <input type="color" id="lhThemeColor" value="#991b1b" style="width:100%; height:32px;" />
+          </div>
+        </div>
+
+        <!-- Image Upload Mode -->
+        <div id="lhImageSection" style="display:none;">
+          <div class="form-group">
+            <label>लेटरहेड इमेज चुनें (PNG / JPG):</label>
+            <input type="file" id="lhFullImgInput" accept="image/*" />
+          </div>
+          <div class="form-group" style="margin-top:8px;">
+            <label>इमेज प्लेसमेंट मोड:</label>
+            <select id="lhImgPlacement">
+              <option value="header">केवल ऊपरी हेडर बैनर (Top 18% हिस्सा)</option>
+              <option value="fullpage">पूरा A4 पेज बैकग्राउंड टेम्पलेट</option>
+            </select>
+          </div>
+        </div>
+
+        <hr style="border-color:var(--border); margin:4px 0;" />
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>किन पेजों पर लगाएं:</label>
+            <select id="lhApplyScope">
+              <option value="first">केवल पहले पेज पर (Page 1 Only)</option>
+              <option value="all">सभी पेजों पर (All Pages)</option>
+            </select>
+          </div>
+          <div class="form-group" style="justify-content:flex-end;">
+            <button class="danger" onclick="removeLetterhead()">🗑️ लेटरहेड हटाएं</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button onclick="closeModal('modalLetterhead')">रद्द करें</button>
+        <button class="primary" onclick="applyLetterhead()">✅ लेटरहेड लागू करें</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Watermark & Page Numbers Modal -->
+  <div class="modal-backdrop" id="modalWatermark">
+    <div class="modal" style="max-width:500px;">
+      <div class="modal-header">
+        <span>💧 वॉटरमार्क और ऑटो पेज नंबर</span>
+        <button onclick="closeModal('modalWatermark')">✕</button>
+      </div>
+      <div class="modal-body">
+        <h4 style="color:#93c5fd;">1. वॉटरमार्क सेटिंग्स (Watermark)</h4>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label>वॉटरमार्क टेक्स्ट (खाली छोड़ें यदि नहीं चाहिए):</label>
+            <input type="text" id="wmText" placeholder="उदा. CONFIDENTIAL या आपका नाम" />
+          </div>
+          <div class="form-group">
+            <label>वॉटरमार्क लोगो इमेज (वैकल्पिक):</label>
+            <input type="file" id="wmImageInput" accept="image/*" />
+          </div>
+          <div class="form-group">
+            <label>रंग:</label>
+            <input type="color" id="wmColor" value="#64748b" style="width:100%; height:32px;" />
+          </div>
+          <div class="form-group">
+            <label>पारदर्शिता (Opacity 0.05 - 0.8):</label>
+            <input type="number" id="wmOpacity" value="0.18" step="0.05" min="0.05" max="0.8" />
+          </div>
+          <div class="form-group">
+            <label>तिरछा कोण (Rotation डिग्री):</label>
+            <input type="number" id="wmAngle" value="-35" min="-90" max="90" />
+          </div>
+        </div>
+
+        <hr style="border-color:var(--border);" />
+
+        <h4 style="color:#93c5fd;">2. ऑटोमैटिक पेज नंबर (Page Numbers)</h4>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+              <input type="checkbox" id="pnEnabled" /> सभी पेजों पर पेज नंबर दिखाएं
+            </label>
+          </div>
+          <div class="form-group">
+            <label>फ़ॉर्मेट:</label>
+            <select id="pnFormat">
+              <option value="Page {n} of {total}">Page 1 of 10</option>
+              <option value="पृष्ठ {n} / {total}">पृष्ठ 1 / 10</option>
+              <option value="{n} / {total}">1 / 10</option>
+              <option value="- {n} -">- 1 -</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>स्थान (Position):</label>
+            <select id="pnPosition">
+              <option value="bottom-center">नीचे बीच में (Bottom Center)</option>
+              <option value="bottom-right">नीचे दाएं (Bottom Right)</option>
+              <option value="bottom-left">नीचे बाएं (Bottom Left)</option>
+              <option value="top-right">ऊपर दाएं (Top Right)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="danger" onclick="clearWatermarkAndPn()">हटाएं</button>
+        <button onclick="closeModal('modalWatermark')">बंद करें</button>
+        <button class="primary" onclick="applyWatermarkAndPn()">✅ लागू करें</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Offline OCR Modal -->
+  <div class="modal-backdrop" id="modalOcr">
+    <div class="modal" style="max-width:580px;">
+      <div class="modal-header">
+        <span>🔍 ऑफ़लाइन OCR (स्कैन PDF से हिंदी/अंग्रेज़ी टेक्स्ट)</span>
+        <button onclick="closeModal('modalOcr')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>OCR भाषा चुनें:</label>
+            <select id="ocrLang">
+              <option value="hin+eng">हिंदी + English (दोनों)</option>
+              <option value="hin">केवल हिंदी (Devanagari)</option>
+              <option value="eng">केवल English</option>
+            </select>
+          </div>
+          <div class="form-group" style="justify-content:flex-end;">
+            <button class="primary" id="btnRunOcr" onclick="runOfflineOcr()">🚀 वर्तमान पेज स्कैन करें</button>
+          </div>
+        </div>
+
+        <div id="ocrProgressWrap" style="display:none;">
+          <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
+            <span id="ocrStatusText">OCR इंजन तैयार हो रहा है...</span>
+            <span id="ocrPctText">0%</span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="ocrProgressBar"></div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>निकाला गया टेक्स्ट (आप यहाँ सुधार भी कर सकते हैं):</label>
+          <textarea id="ocrResultText" rows="8" placeholder="स्कैन करने के बाद हिंदी/अंग्रेज़ी टेक्स्ट यहाँ दिखाई देगा..."></textarea>
+        </div>
+
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button onclick="copyOcrText()">📋 टेक्स्ट कॉपी करें</button>
+          <button onclick="insertOcrAsEditableBox()" class="primary">➕ पेज पर एडिटेबल टेक्स्ट बॉक्स डालें</button>
+          <button onclick="embedSearchableOcrLayer()" class="success">🔎 Searchable PDF लेयर जोड़ें</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button onclick="closeModal('modalOcr')">बंद करें</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Split / Extract Pages Modal -->
+  <div class="modal-backdrop" id="modalSplit">
+    <div class="modal" style="max-width:440px;">
+      <div class="modal-header">
+        <span>✂️ पेज अलग निकालें (Split / Extract PDF)</span>
+        <button onclick="closeModal('modalSplit')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:12.5px; color:var(--text-muted);">
+          कुल पेज: <strong id="splitTotalPages">0</strong>। जिन पेजों की अलग PDF बनानी है उनके नंबर लिखें (जैसे: <code>1, 3-5</code>):
+        </p>
+        <input type="text" id="splitRangeInput" placeholder="उदा. 1-3, 5" />
+      </div>
+      <div class="modal-footer">
+        <button onclick="closeModal('modalSplit')">रद्द करें</button>
+        <button class="success" onclick="executeSplitPdf()">⬇️ चुने हुए पेजों की PDF बनाएं</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. Saved Drafts (IndexedDB) Modal -->
+  <div class="modal-backdrop" id="modalDrafts">
+    <div class="modal" style="max-width:520px;">
+      <div class="modal-header">
+        <span>📁 लोकल ऑफ़लाइन ड्राफ्ट (IndexedDB)</span>
+        <button onclick="closeModal('modalDrafts')">✕</button>
+      </div>
+      <div class="modal-body" id="draftsListContainer">
+        <p style="color:var(--text-muted);">लोड हो रहा है...</p>
+      </div>
+      <div class="modal-footer">
+        <button onclick="closeModal('modalDrafts')">बंद करें</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. Export & Password Protection Modal -->
+  <div class="modal-backdrop" id="modalExport">
+    <div class="modal" style="max-width:460px;">
+      <div class="modal-header">
+        <span>⬇️ फाइनल PDF एक्सपोर्ट व सुरक्षा</span>
+        <button onclick="closeModal('modalExport')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>फ़ाइल का नाम:</label>
+          <input type="text" id="exportFileName" value="Edited_Document.pdf" />
+        </div>
+        <div class="form-group">
+          <label>पासवर्ड सुरक्षा (वैकल्पिक — खाली छोड़ें यदि पासवर्ड नहीं लगाना):</label>
+          <input type="password" id="exportPassword" placeholder="PDF खोलने का पासवर्ड डालें..." />
+          <span style="font-size:11px; color:var(--text-muted);">
+            128-bit स्टैंडर्ड PDF एन्क्रिप्शन द्वारा सुरक्षित किया जाएगा।
+          </span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button onclick="closeModal('modalExport')">रद्द करें</button>
+        <button class="success" id="btnConfirmExport" onclick="exportFinalPdf()">🚀 PDF तैयार करें और सेव करें</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SCRIPTS (OFFLINE-FIRST WITH FALLBACK) ==================== -->
+  <script>
+    function loadScriptHybrid(localSrc, cdnSrc) {
+      return new Promise((resolve) => {
+        const s = document.createElement('script');
+        s.src = localSrc;
+        s.onload = () => resolve({ source: 'local' });
+        s.onerror = () => {
+          if (!cdnSrc) return resolve({ source: 'failed' });
+          const fallback = document.createElement('script');
+          fallback.src = cdnSrc;
+          fallback.onload = () => resolve({ source: 'cdn' });
+          fallback.onerror = () => resolve({ source: 'failed' });
+          document.head.appendChild(fallback);
+        };
+        document.head.appendChild(s);
+      });
+    }
+
+    (async function bootLibraries() {
+      const results = await Promise.all([
+        loadScriptHybrid('offline-assets/js/pdf.min.js', 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js'),
+        loadScriptHybrid('offline-assets/js/pdf-lib.min.js', 'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js'),
+        loadScriptHybrid('offline-assets/js/fontkit.umd.min.js', 'https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js'),
+        loadScriptHybrid('offline-assets/js/tesseract.min.js', 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/tesseract.min.js')
+      ]);
+
+      const pill = document.getElementById('offlineStatusPill');
+      const allLocal = results.every(r => r.source === 'local');
+      if (allLocal) {
+        pill.textContent = '🟢 100% ऑफ़लाइन मोड रेडी';
+      } else {
+        pill.textContent = '🟡 हाइब्रिड मोड (offline-assets जाँचें)';
+        pill.classList.add('warn');
+      }
+
+      if (window.pdfjsLib) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = results[0].source === 'local'
+          ? 'offline-assets/js/pdf.worker.min.js'
+          : 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+      }
+      window.__OCR_LOCAL_AVAILABLE__ = results[3].source === 'local';
+      initApp();
+    })();
+  </script>
+
+  <script>
+    /* ==========================================================================
+       APPLICATION STATE & DATA MODELS
+       ========================================================================== */
+    const state = {
+      sourceDocs: {},        // { docId: Uint8Array }
+      pdfJsDocs: {},         // { docId: PDFDocumentProxy }
+      pageRenderCache: {},   // { cacheKey: HTMLCanvasElement }
+      pages: [],             // [{ id, docId, sourcePageIndex, rotation, width, height, elements: [] }]
+      currentPageIndex: 0,
+      zoom: 1.0,
+      activeTool: 'select',  // select | text | whiteout | highlight | pen | rect | circle | arrow
+      selectedElementId: null,
+      editingElementId: null,
+      pendingTextPos: { x: 80, y: 120 },
+
+      // Global styling defaults
+      style: {
+        fontFamily: 'NotoSansDevanagariLocal',
+        fontSize: 18,
+        color: '#111827',
+        bgColor: '#ffffff',
+        hasBg: false,
+        strokeWidth: 3,
+        bold: false,
+        italic: false
+      },
+
+      // Custom loaded TTF font
+      customFontBytes: null,
+      customFontName: null,
+
+      // Letterhead configuration
+      letterhead: null,      // { mode: 'design'|'image', scope: 'first'|'all', ... }
+
+      // Watermark & Page Numbers
+      watermark: null,       // { text, imgDataUrl, color, opacity, angle }
+      pageNumbers: {
+        enabled: false,
+        format: 'Page {n} of {total}',
+        position: 'bottom-center'
+      },
+
+      // Undo / Redo Stacks
+      history: [],
+      redoStack: [],
+
+      // Last OCR structured words for searchable layer
+      lastOcrWords: []
+    };
+
+    const canvas = document.getElementById('editorCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function showToast(msg, duration = 2600) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.style.display = 'block';
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => { t.style.display = 'none'; }, duration);
+    }
+
+    function openModal(id) { document.getElementById(id).classList.add('open'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+    function uid(prefix = 'id') {
+      return prefix + '_' + Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
+    }
+
+    function clonePagesSnapshot() {
+      return JSON.parse(JSON.stringify(state.pages));
+    }
+
+    function pushHistory() {
+      state.history.push(clonePagesSnapshot());
+      if (state.history.length > 35) state.history.shift();
+      state.redoStack = [];
+      updateHistoryButtons();
+    }
+
+    function undo() {
+      if (!state.history.length) return;
+      state.redoStack.push(clonePagesSnapshot());
+      state.pages = state.history.pop();
+      if (state.currentPageIndex >= state.pages.length) {
+        state.currentPageIndex = Math.max(0, state.pages.length - 1);
+      }
+      state.selectedElementId = null;
+      updateHistoryButtons();
+      renderAll();
+    }
+
+    function redo() {
+      if (!state.redoStack.length) return;
+      state.history.push(clonePagesSnapshot());
+      state.pages = state.redoStack.pop();
+      state.selectedElementId = null;
+      updateHistoryButtons();
+      renderAll();
+    }
+
+    function updateHistoryButtons() {
+      document.getElementById('btnUndo').disabled = state.history.length === 0;
+      document.getElementById('btnRedo').disabled = state.redoStack.length === 0;
+    }
+
+    /* ==========================================================================
+       INITIALIZATION & FILE LOADERS
+       ========================================================================== */
+    function initApp() {
+      updateHistoryButtons();
+      initSignaturePad();
+      setupCanvasPointerEvents();
+
+      // Open single PDF
+      document.getElementById('inputOpenPdf').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        document.getElementById('exportFileName').value = file.name.replace(/\.pdf$/i, '_Edited.pdf');
+        await loadPdfFile(file, true);
+        e.target.value = '';
+      });
+
+      // Merge multiple PDFs
+      document.getElementById('inputMergePdf').addEventListener('change', async (e) => {
+        const files = Array.from(e.target.files);
+        if (!files.length) return;
+        pushHistory();
+        for (const f of files) {
+          await loadPdfFile(f, false);
+        }
+        showToast(`${files.length} PDF फ़ाइलें सफलतापूर्वक मर्ज की गईं!`);
+        e.target.value = '';
+      });
+
+      // Insert Image / Stamp / QR
+      document.getElementById('inputInsertImg').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (!state.pages.length) addBlankPage();
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = () => {
+            pushHistory();
+            const page = state.pages[state.currentPageIndex];
+            const maxW = 180;
+            const ratio = img.height / img.width;
+            const w = Math.min(maxW, img.width);
+            const h = w * ratio;
+            const el = {
+              id: uid('img'),
+              type: 'image',
+              x: 70,
+              y: 120,
+              w,
+              h,
+              dataUrl: reader.result
+            };
+            page.elements.push(el);
+            state.selectedElementId = el.id;
+            setTool('select');
+            renderCanvas();
+            showToast('इमेज / मुहर जोड़ी गई (ड्रैग करके स्थान बदलें)');
+          };
+          img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+      });
+
+      // Load Custom TTF/OTF Font
+      document.getElementById('inputCustomFont').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const buf = await file.arrayBuffer();
+        const fontName = 'CustomUserFont_' + Date.now();
+        const face = new FontFace(fontName, buf);
+        await face.load();
+        document.fonts.add(face);
+        state.customFontBytes = new Uint8Array(buf);
+        state.customFontName = fontName;
+
+        const sel = document.getElementById('propFontFamily');
+        const opt = document.createElement('option');
+        opt.value = fontName;
+        opt.textContent = '★ ' + file.name;
+        sel.appendChild(opt);
+        sel.value = fontName;
+        updateSelectedStyle();
+        showToast(`कस्टम फ़ॉन्ट "${file.name}" लोड हो गया!`);
+        e.target.value = '';
+      });
+
+      // Keyboard delete shortcut
+      window.addEventListener('keydown', (e) => {
+        if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+        if ((e.key === 'Delete' || e.key === 'Backspace') && state.selectedElementId) {
+          deleteSelected();
+        } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+          e.preventDefault();
+          undo();
+        }
+      });
+    }
+
+    async function loadPdfFile(file, replaceExisting = true) {
+      const arrayBuf = await file.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuf);
+      const docId = uid('doc');
+      state.sourceDocs[docId] = bytes;
+
+      const loadingTask = pdfjsLib.getDocument({ data: bytes.slice() });
+      const pdfDoc = await loadingTask.promise;
+      state.pdfJsDocs[docId] = pdfDoc;
+
+      if (replaceExisting) {
+        state.pages = [];
+        state.history = [];
+        state.redoStack = [];
+        state.currentPageIndex = 0;
+        state.selectedElementId = null;
+      }
+
+      for (let i = 1; i <= pdfDoc.numPages; i++) {
+        const page = await pdfDoc.getPage(i);
+        const vp = page.getViewport({ scale: 1 });
+        state.pages.push({
+          id: uid('pg'),
+          docId,
+          sourcePageIndex: i - 1,
+          rotation: 0,
+          width: vp.width,
+          height: vp.height,
+          elements: []
+        });
+      }
+
+      renderAll();
+      showToast(`"${file.name}" (${pdfDoc.numPages} पेज) लोड हो गया`);
+    }
+
+    function addBlankPage() {
+      pushHistory();
+      // Standard A4 in PDF points (595.28 x 841.89)
+      state.pages.push({
+        id: uid('pg'),
+        docId: null,
+        sourcePageIndex: -1,
+        rotation: 0,
+        width: 595.28,
+        height: 841.89,
+        elements: []
+      });
+      state.currentPageIndex = state.pages.length - 1;
+      renderAll();
+      showToast('नया खाली A4 पेज जोड़ा गया');
+    }
+
+    /* ==========================================================================
+       PAGE MANAGEMENT (ROTATE, REORDER, DUPLICATE, DELETE, SPLIT)
+       ========================================================================== */
+    function rotatePage(idx, deltaDeg) {
+      pushHistory();
+      const pg = state.pages[idx];
+      pg.rotation = (pg.rotation + deltaDeg + 360) % 360;
+      // Swap width & height if 90/270 rotation toggle
+      if (Math.abs(deltaDeg) === 90) {
+        const tmp = pg.width;
+        pg.width = pg.height;
+        pg.height = tmp;
+      }
+      renderAll();
+    }
+
+    function movePage(idx, dir) {
+      const target = idx + dir;
+      if (target < 0 || target >= state.pages.length) return;
+      pushHistory();
+      const temp = state.pages[idx];
+      state.pages[idx] = state.pages[target];
+      state.pages[target] = temp;
+      if (state.currentPageIndex === idx) state.currentPageIndex = target;
+      renderAll();
+    }
+
+    function duplicatePage(idx) {
+      pushHistory();
+      const copy = JSON.parse(JSON.stringify(state.pages[idx]));
+      copy.id = uid('pg');
+      copy.elements.forEach(el => el.id = uid('el'));
+      state.pages.splice(idx + 1, 0, copy);
+      state.currentPageIndex = idx + 1;
+      renderAll();
+      showToast('पेज की डुप्लिकेट कॉपी बनाई गई');
+    }
+
+    function deletePage(idx) {
+      if (state.pages.length <= 1) {
+        showToast('कम से कम 1 पेज रहना आवश्यक है');
+        return;
+      }
+      pushHistory();
+      state.pages.splice(idx, 1);
+      if (state.currentPageIndex >= state.pages.length) {
+        state.currentPageIndex = state.pages.length - 1;
+      }
+      state.selectedElementId = null;
+      renderAll();
+      showToast('पेज हटा दिया गया');
+    }
+
+    function openSplitModal() {
+      if (!state.pages.length) return showToast('पहले कोई PDF खोलें');
+      document.getElementById('splitTotalPages').textContent = state.pages.length;
+      document.getElementById('splitRangeInput').value = `1-${Math.min(2, state.pages.length)}`;
+      openModal('modalSplit');
+    }
+
+    function parsePageRanges(rangeStr, maxPages) {
+      const indices = new Set();
+      const parts = rangeStr.split(',');
+      for (const p of parts) {
+        const trimmed = p.trim();
+        if (!trimmed) continue;
+        if (trimmed.includes('-')) {
+          const [a, b] = trimmed.split('-').map(n => parseInt(n.trim(), 10));
+          if (!isNaN(a) && !isNaN(b)) {
+            for (let i = Math.max(1, a); i <= Math.min(maxPages, b); i++) {
+              indices.add(i - 1);
+            }
+          }
+        } else {
+          const n = parseInt(trimmed, 10);
+          if (!isNaN(n) && n >= 1 && n <= maxPages) indices.add(n - 1);
+        }
+      }
+      return Array.from(indices).sort((a, b) => a - b);
+    }
+
+    async function executeSplitPdf() {
+      const rangeStr = document.getElementById('splitRangeInput').value;
+      const selectedIndices = parsePageRanges(rangeStr, state.pages.length);
+      if (!selectedIndices.length) {
+        return showToast('कृपया सही पेज नंबर डालें (जैसे 1-3)');
+      }
+      closeModal('modalSplit');
+      showToast('चुने हुए पेजों की PDF बन रही है...');
+      const pdfBytes = await buildPdfBytes(selectedIndices);
+      downloadBytes(pdfBytes, `Extracted_Pages_${rangeStr.replace(/\s+/g, '')}.pdf`);
+    }
+
+    /* ==========================================================================
+       RENDERING ENGINE (THUMBNAILS + MAIN INTERACTIVE CANVAS)
+       ========================================================================== */
+    async function getBasePageCanvas(pageObj) {
+      if (!pageObj.docId) return null;
+      const cacheKey = `${pageObj.docId}_${pageObj.sourcePageIndex}_${pageObj.rotation}`;
+      if (state.pageRenderCache[cacheKey]) return state.pageRenderCache[cacheKey];
+
+      const pdfDoc = state.pdfJsDocs[pageObj.docId];
+      if (!pdfDoc) return null;
+      const pdfPage = await pdfDoc.getPage(pageObj.sourcePageIndex + 1);
+      const totalRot = (pdfPage.rotate + pageObj.rotation) % 360;
+      const viewport = pdfPage.getViewport({ scale: 2.0, rotation: totalRot });
+
+      const off = document.createElement('canvas');
+      off.width = viewport.width;
+      off.height = viewport.height;
+      const offCtx = off.getContext('2d');
+      await pdfPage.render({ canvasContext: offCtx, viewport }).promise;
+
+      state.pageRenderCache[cacheKey] = off;
+      return off;
+    }
+
+    async function renderAll() {
+      const hasPages = state.pages.length > 0;
+      document.getElementById('emptyState').style.display = hasPages ? 'none' : 'flex';
+      document.getElementById('canvasStage').style.display = hasPages ? 'block' : 'none';
+      document.getElementById('pageCountLabel').textContent = state.pages.length;
+
+      if (!hasPages) {
+        document.getElementById('thumbList').innerHTML = '';
+        return;
+      }
+
+      await renderThumbnails();
+      await renderCanvas();
+    }
+
+    async function renderThumbnails() {
+      const list = document.getElementById('thumbList');
+      list.innerHTML = '';
+
+      for (let i = 0; i < state.pages.length; i++) {
+        const pg = state.pages[i];
+        const card = document.createElement('div');
+        card.className = 'thumb-card' + (i === state.currentPageIndex ? ' active' : '');
+        card.onclick = (e) => {
+          if (e.target.tagName === 'BUTTON') return;
+          state.currentPageIndex = i;
+          state.selectedElementId = null;
+          renderAll();
+        };
+
+        const tCanvas = document.createElement('canvas');
+        const tW = 140;
+        const tH = Math.round((pg.height / pg.width) * tW);
+        tCanvas.width = tW;
+        tCanvas.height = tH;
+        const tCtx = tCanvas.getContext('2d');
+        tCtx.fillStyle = '#ffffff';
+        tCtx.fillRect(0, 0, tW, tH);
+
+        const base = await getBasePageCanvas(pg);
+        if (base) {
+          tCtx.drawImage(base, 0, 0, tW, tH);
+        }
+
+        const meta = document.createElement('div');
+        meta.className = 'thumb-meta';
+        meta.innerHTML = `<span>पेज ${i + 1}</span><span>${Math.round(pg.width)}×${Math.round(pg.height)}</span>`;
+
+        const actions = document.createElement('div');
+        actions.className = 'thumb-actions';
+        actions.innerHTML = `
+          <button title="बाएं घुमाएं" onclick="rotatePage(${i}, -90)">↺</button>
+          <button title="दाएं घुमाएं" onclick="rotatePage(${i}, 90)">↻</button>
+          <button title="ऊपर ले जाएं" onclick="movePage(${i}, -1)">↑</button>
+          <button title="नीचे ले जाएं" onclick="movePage(${i}, 1)">↓</button>
+          <button title="डुप्लिकेट" onclick="duplicatePage(${i})">❐</button>
+          <button title="हटाएं" class="danger" onclick="deletePage(${i})">✕</button>
+        `;
+
+        card.appendChild(tCanvas);
+        card.appendChild(meta);
+        card.appendChild(actions);
+        list.appendChild(card);
+      }
+    }
+
+    async function renderCanvas() {
+      const pg = state.pages[state.currentPageIndex];
+      if (!pg) return;
+
+      const dpr = window.devicePixelRatio || 1;
+      const cssW = pg.width * state.zoom;
+      const cssH = pg.height * state.zoom;
+
+      canvas.style.width = cssW + 'px';
+      canvas.style.height = cssH + 'px';
+      canvas.width = Math.round(cssW * dpr);
+      canvas.height = Math.round(cssH * dpr);
+
+      ctx.save();
+      ctx.scale(dpr * state.zoom, dpr * state.zoom);
+
+      // 1. White Page Background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, pg.width, pg.height);
+
+      // 2. Base PDF Page
+      const base = await getBasePageCanvas(pg);
+      if (base) {
+        ctx.drawImage(base, 0, 0, pg.width, pg.height);
+      }
+
+      // 3. Letterhead Overlay (if configured)
+      drawLetterheadOnContext(ctx, pg, state.currentPageIndex);
+
+      // 4. User Elements (Whiteout, Shapes, Drawings, Images, Signatures, Text)
+      for (const el of pg.elements) {
+        drawElementOnContext(ctx, el);
+      }
+
+      // 5. Watermark & Page Numbers
+      drawWatermarkOnContext(ctx, pg);
+      drawPageNumberOnContext(ctx, pg, state.currentPageIndex, state.pages.length);
+
+      // 6. Selection Box & Resize Handle
+      if (state.selectedElementId) {
+        const sel = pg.elements.find(e => e.id === state.selectedElementId);
+        if (sel) {
+          ctx.save();
+          ctx.strokeStyle = '#2563eb';
+          ctx.lineWidth = 1.5 / state.zoom;
+          ctx.setLineDash([4 / state.zoom, 3 / state.zoom]);
+          ctx.strokeRect(sel.x - 2, sel.y - 2, sel.w + 4, sel.h + 4);
+          ctx.setLineDash([]);
+
+          // Bottom-right resize handle
+          const hs = 9 / state.zoom;
+          ctx.fillStyle = '#2563eb';
+          ctx.fillRect(sel.x + sel.w - hs / 2, sel.y + sel.h - hs / 2, hs, hs);
+          ctx.restore();
+        }
+      }
+
+      ctx.restore();
+      updateSelectedPropsUI();
+    }
+
+    function drawElementOnContext(c, el) {
+      c.save();
+      if (el.type === 'whiteout' || el.type === 'rect') {
+        if (el.fillColor) {
+          c.fillStyle = el.fillColor;
+          c.fillRect(el.x, el.y, el.w, el.h);
+        }
+        if (el.strokeColor && el.strokeWidth > 0) {
+          c.strokeStyle = el.strokeColor;
+          c.lineWidth = el.strokeWidth;
+          c.strokeRect(el.x, el.y, el.w, el.h);
+        }
+      } else if (el.type === 'highlight') {
+        c.fillStyle = el.fillColor || 'rgba(250, 204, 21, 0.38)';
+        c.fillRect(el.x, el.y, el.w, el.h);
+      } else if (el.type === 'circle') {
+        c.beginPath();
+        c.ellipse(el.x + el.w / 2, el.y + el.h / 2, Math.abs(el.w / 2), Math.abs(el.h / 2), 0, 0, Math.PI * 2);
+        if (el.fillColor) {
+          c.fillStyle = el.fillColor;
+          c.fill();
+        }
+        c.strokeStyle = el.strokeColor || '#ef4444';
+        c.lineWidth = el.strokeWidth || 2;
+        c.stroke();
+      } else if (el.type === 'arrow') {
+        const x1 = el.x, y1 = el.y, x2 = el.x + el.w, y2 = el.y + el.h;
+        const headLen = 14;
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        c.strokeStyle = el.strokeColor || '#ef4444';
+        c.fillStyle = el.strokeColor || '#ef4444';
+        c.lineWidth = el.strokeWidth || 3;
+        c.beginPath();
+        c.moveTo(x1, y1);
+        c.lineTo(x2, y2);
+        c.stroke();
+
+        c.beginPath();
+        c.moveTo(x2, y2);
+        c.lineTo(x2 - headLen * Math.cos(angle - Math.PI / 6), y2 - headLen * Math.sin(angle - Math.PI / 6));
+        c.lineTo(x2 - headLen * Math.cos(angle + Math.PI / 6), y2 - headLen * Math.sin(angle + Math.PI / 6));
+        c.closePath();
+        c.fill();
+      } else if (el.type === 'pen' && el.points && el.points.length > 1) {
+        c.strokeStyle = el.strokeColor || '#111827';
+        c.lineWidth = el.strokeWidth || 2.5;
+        c.lineCap = 'round';
+        c.lineJoin = 'round';
+        c.beginPath();
+        c.moveTo(el.points[0].x, el.points[0].y);
+        for (let i = 1; i < el.points.length; i++) {
+          c.lineTo(el.points[i].x, el.points[i].y);
+        }
+        c.stroke();
+      } else if (el.type === 'image' || el.type === 'signature') {
+        if (!el._imgObj) {
+          const im = new Image();
+          im.src = el.dataUrl;
+          im.onload = () => renderCanvas();
+          el._imgObj = im;
+        }
+        if (el._imgObj && el._imgObj.complete) {
+          c.drawImage(el._imgObj, el.x, el.y, el.w, el.h);
+        }
+      } else if (el.type === 'text') {
+        if (el.hasBg) {
+          c.fillStyle = el.bgColor || '#ffffff';
+          c.fillRect(el.x - 3, el.y - 2, el.w + 6, el.h + 4);
+        }
+        const weight = el.bold ? 'bold' : 'normal';
+        const italic = el.italic ? 'italic' : 'normal';
+        const size = el.fontSize || 18;
+        const family = el.fontFamily || 'NotoSansDevanagariLocal';
+        c.font = `${italic} ${weight} ${size}px "${family}", sans-serif`;
+        c.fillStyle = el.color || '#111827';
+        c.textBaseline = 'top';
+
+        const lines = (el.text || '').split('\n');
+        const lineHeight = size * 1.32;
+        let maxW = 40;
+        lines.forEach((line, idx) => {
+          const m = c.measureText(line);
+          if (m.width > maxW) maxW = m.width;
+          c.fillText(line, el.x, el.y + idx * lineHeight);
+        });
+        el.w = maxW;
+        el.h = Math.max(lineHeight, lines.length * lineHeight);
+      }
+      c.restore();
+    }
+
+    /* ==========================================================================
+       TOOLS, POINTER INTERACTIONS, DRAG & RESIZE
+       ========================================================================== */
+    function setTool(toolName) {
+      state.activeTool = toolName;
+      document.querySelectorAll('#toolRibbon button[data-tool]').forEach(btn => {
+        btn.classList.toggle('active-tool', btn.dataset.tool === toolName);
+      });
+      canvas.style.cursor = toolName === 'select' ? 'default' : (toolName === 'text' ? 'text' : 'crosshair');
+    }
+
+    function changeZoom(delta) {
+      state.zoom = Math.min(2.5, Math.max(0.4, +(state.zoom + delta).toFixed(2)));
+      document.getElementById('zoomLabel').textContent = Math.round(state.zoom * 100) + '%';
+      renderCanvas();
+    }
+
+    function getCanvasPdfCoords(e) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: (e.clientX - rect.left) / state.zoom,
+        y: (e.clientY - rect.top) / state.zoom
+      };
+    }
+
+    function setupCanvasPointerEvents() {
+      let isDragging = false;
+      let dragMode = null; // 'move' | 'resize' | 'create' | 'pen'
+      let startPt = { x: 0, y: 0 };
+      let origBox = { x: 0, y: 0, w: 0, h: 0 };
+      let activeEl = null;
+
+      canvas.addEventListener('pointerdown', (e) => {
+        const pg = state.pages[state.currentPageIndex];
+        if (!pg) return;
+        canvas.setPointerCapture(e.pointerId);
+        const pt = getCanvasPdfCoords(e);
+        startPt = pt;
+
+        // Tool: Add Text
+        if (state.activeTool === 'text') {
+          state.pendingTextPos = pt;
+          state.editingElementId = null;
+          document.getElementById('textModalInput').value = '';
+          document.getElementById('textModalSize').value = state.style.fontSize;
+          document.getElementById('textModalColor').value = state.style.color;
+          document.getElementById('textModalWhiteout').checked = false;
+          openModal('modalText');
+          return;
+        }
+
+        // Tool: Select / Move / Resize
+        if (state.activeTool === 'select') {
+          // Check resize handle of currently selected element first
+          if (state.selectedElementId) {
+            const sel = pg.elements.find(el => el.id === state.selectedElementId);
+            if (sel && Math.abs(pt.x - (sel.x + sel.w)) <= 12 && Math.abs(pt.y - (sel.y + sel.h)) <= 12) {
+              pushHistory();
+              isDragging = true;
+              dragMode = 'resize';
+              activeEl = sel;
+              origBox = { x: sel.x, y: sel.y, w: sel.w, h: sel.h };
+              return;
+            }
+          }
+
+          // Hit test elements from top to bottom
+          let hit = null;
+          for (let i = pg.elements.length - 1; i >= 0; i--) {
+            const el = pg.elements[i];
+            if (el.type === 'ocr-hidden') continue;
+            if (pt.x >= el.x - 4 && pt.x <= el.x + el.w + 4 && pt.y >= el.y - 4 && pt.y <= el.y + el.h + 4) {
+              hit = el;
+              break;
+            }
+          }
+
+          state.selectedElementId = hit ? hit.id : null;
+          renderCanvas();
+
+          if (hit) {
+            pushHistory();
+            isDragging = true;
+            dragMode = 'move';
+            activeEl = hit;
+            origBox = { x: hit.x, y: hit.y, w: hit.w, h: hit.h };
+          }
+          return;
+        }
+
+        // Drawing / Shape Tools
+        pushHistory();
+        isDragging = true;
+        if (state.activeTool === 'pen') {
+          dragMode = 'pen';
+          activeEl = {
+            id: uid('pen'),
+            type: 'pen',
+            x: pt.x,
+            y: pt.y,
+            w: 1,
+            h: 1,
+            points: [{ x: pt.x, y: pt.y }],
+            strokeColor: state.style.color,
+            strokeWidth: state.style.strokeWidth
+          };
+          pg.elements.push(activeEl);
+        } else {
+          dragMode = 'create';
+          const t = state.activeTool;
+          activeEl = {
+            id: uid(t),
+            type: t,
+            x: pt.x,
+            y: pt.y,
+            w: 1,
+            h: 1,
+            fillColor: t === 'whiteout' ? state.style.bgColor : (t === 'highlight' ? 'rgba(250, 204, 21, 0.38)' : (state.style.hasBg ? state.style.bgColor : null)),
+            strokeColor: (t === 'whiteout' || t === 'highlight') ? null : state.style.color,
+            strokeWidth: state.style.strokeWidth
+          };
+          pg.elements.push(activeEl);
+          state.selectedElementId = activeEl.id;
+        }
+        renderCanvas();
+      });
+
+      canvas.addEventListener('pointermove', (e) => {
+        if (!isDragging || !activeEl) return;
+        const pt = getCanvasPdfCoords(e);
+        const dx = pt.x - startPt.x;
+        const dy = pt.y - startPt.y;
+
+        if (dragMode === 'move') {
+          const oldX = activeEl.x, oldY = activeEl.y;
+          activeEl.x = origBox.x + dx;
+          activeEl.y = origBox.y + dy;
+          if (activeEl.type === 'pen' && activeEl.points) {
+            const sdx = activeEl.x - oldX, sdy = activeEl.y - oldY;
+            activeEl.points.forEach(p => { p.x += sdx; p.y += sdy; });
+          }
+        } else if (dragMode === 'resize') {
+          activeEl.w = Math.max(12, origBox.w + dx);
+          activeEl.h = Math.max(12, origBox.h + dy);
+          if (activeEl.type === 'text') {
+            activeEl.fontSize = Math.max(8, Math.round(activeEl.fontSize * (activeEl.w / Math.max(12, origBox.w))));
+            origBox.w = activeEl.w;
+          }
+        } else if (dragMode === 'create') {
+          if (activeEl.type === 'arrow') {
+            activeEl.w = dx;
+            activeEl.h = dy;
+          } else {
+            activeEl.x = Math.min(startPt.x, pt.x);
+            activeEl.y = Math.min(startPt.y, pt.y);
+            activeEl.w = Math.max(4, Math.abs(dx));
+            activeEl.h = Math.max(4, Math.abs(dy));
+          }
+        } else if (dragMode === 'pen') {
+          activeEl.points.push({ x: pt.x, y: pt.y });
+          const xs = activeEl.points.map(p => p.x);
+          const ys = activeEl.points.map(p => p.y);
+          activeEl.x = Math.min(...xs);
+          activeEl.y = Math.min(...ys);
+          activeEl.w = Math.max(4, Math.max(...xs) - activeEl.x);
+          activeEl.h = Math.max(4, Math.max(...ys) - activeEl.y);
+        }
+
+        renderCanvas();
+      });
+
+      canvas.addEventListener('pointerup', () => {
+        if (isDragging && dragMode === 'create' && activeEl && activeEl.type !== 'arrow') {
+          setTool('select');
+        }
+        isDragging = false;
+        dragMode = null;
+        activeEl = null;
+      });
+
+      // Double-click to edit text
+      canvas.addEventListener('dblclick', () => {
+        if (state.selectedElementId) editSelectedText();
+      });
+    }
+
+    /* ==========================================================================
+       TEXT MODAL & PROPERTY CONTROLS
+       ========================================================================== */
+    function confirmTextModal() {
+      const txt = document.getElementById('textModalInput').value;
+      if (!txt.trim()) {
+        closeModal('modalText');
+        return;
+      }
+      const pg = state.pages[state.currentPageIndex];
+      const size = parseInt(document.getElementById('textModalSize').value, 10) || 18;
+      const color = document.getElementById('textModalColor').value;
+      const whiteout = document.getElementById('textModalWhiteout').checked;
+
+      pushHistory();
+      if (state.editingElementId) {
+        const el = pg.elements.find(e => e.id === state.editingElementId);
+        if (el) {
+          el.text = txt;
+          el.fontSize = size;
+          el.color = color;
+          el.hasBg = whiteout;
+          el.bgColor = '#ffffff';
+        }
+      } else {
+        const el = {
+          id: uid('txt'),
+          type: 'text',
+          x: state.pendingTextPos.x,
+          y: state.pendingTextPos.y,
+          w: 120,
+          h: size * 1.4,
+          text: txt,
+          fontFamily: state.style.fontFamily,
+          fontSize: size,
+          color,
+          hasBg: whiteout,
+          bgColor: '#ffffff',
+          bold: state.style.bold,
+          italic: state.style.italic
+        };
+        pg.elements.push(el);
+        state.selectedElementId = el.id;
+      }
+
+      closeModal('modalText');
+      setTool('select');
+      renderCanvas();
+    }
+
+    function editSelectedText() {
+      const pg = state.pages[state.currentPageIndex];
+      const el = pg?.elements.find(e => e.id === state.selectedElementId);
+      if (!el || el.type !== 'text') return;
+      state.editingElementId = el.id;
+      document.getElementById('textModalInput').value = el.text;
+      document.getElementById('textModalSize').value = el.fontSize;
+      document.getElementById('textModalColor').value = el.color;
+      document.getElementById('textModalWhiteout').checked = !!el.hasBg;
+      openModal('modalText');
+    }
+
+    function updateSelectedStyle() {
+      state.style.fontFamily = document.getElementById('propFontFamily').value;
+      state.style.fontSize = parseInt(document.getElementById('propFontSize').value, 10) || 18;
+      state.style.color = document.getElementById('propColor').value;
+      state.style.bgColor = document.getElementById('propBgColor').value;
+      state.style.hasBg = document.getElementById('propHasBg').checked;
+      state.style.strokeWidth = parseInt(document.getElementById('propStrokeWidth').value, 10) || 3;
+
+      const pg = state.pages[state.currentPageIndex];
+      const el = pg?.elements.find(e => e.id === state.selectedElementId);
+      if (el) {
+        if (el.type === 'text') {
+          el.fontFamily = state.style.fontFamily;
+          el.fontSize = state.style.fontSize;
+          el.color = state.style.color;
+          el.bgColor = state.style.bgColor;
+          el.hasBg = state.style.hasBg;
+        } else if (el.type === 'whiteout') {
+          el.fillColor = state.style.bgColor;
+        } else {
+          el.strokeColor = state.style.color;
+          el.strokeWidth = state.style.strokeWidth;
+          if (el.type === 'rect' || el.type === 'circle') {
+            el.fillColor = state.style.hasBg ? state.style.bgColor : null;
+          }
+        }
+        renderCanvas();
+      }
+    }
+
+    function toggleBold() {
+      state.style.bold = !state.style.bold;
+      const pg = state.pages[state.currentPageIndex];
+      const el = pg?.elements.find(e => e.id === state.selectedElementId);
+      if (el && el.type === 'text') el.bold = state.style.bold;
+      renderCanvas();
+    }
+
+    function toggleItalic() {
+      state.style.italic = !state.style.italic;
+      const pg = state.pages[state.currentPageIndex];
+      const el = pg?.elements.find(e => e.id === state.selectedElementId);
+      if (el && el.type === 'text') el.italic = state.style.italic;
+      renderCanvas();
+    }
+
+    function updateSelectedPropsUI() {
+      const pg = state.pages[state.currentPageIndex];
+      const el = pg?.elements.find(e => e.id === state.selectedElementId);
+      document.getElementById('selectedActions').style.display = el ? 'flex' : 'none';
+    }
+
+    function duplicateSelected() {
+      const pg = state.pages[state.currentPageIndex];
+      const el = pg?.elements.find(e => e.id === state.selectedElementId);
+      if (!el) return;
+      pushHistory();
+      const copy = JSON.parse(JSON.stringify(el));
+      copy.id = uid('copy');
+      copy.x += 18;
+      copy.y += 18;
+      if (copy.points) copy.points.forEach(p => { p.x += 18; p.y += 18; });
+      pg.elements.push(copy);
+      state.selectedElementId = copy.id;
+      renderCanvas();
+    }
+
+    function deleteSelected() {
+      const pg = state.pages[state.currentPageIndex];
+      if (!pg || !state.selectedElementId) return;
+      pushHistory();
+      pg.elements = pg.elements.filter(e => e.id !== state.selectedElementId);
+      state.selectedElementId = null;
+      renderCanvas();
+    }
+
+    /* ==========================================================================
+       SIGNATURE PAD & UPLOAD
+       ========================================================================== */
+    let sigMode = 'draw';
+    let sigHasStrokes = false;
+
+    function openSignatureModal() {
+      if (!state.pages.length) addBlankPage();
+      clearSignaturePad();
+      openModal('modalSignature');
+    }
+
+    function switchSigTab(mode) {
+      sigMode = mode;
+      document.getElementById('sigTabDrawBtn').classList.toggle('primary', mode === 'draw');
+      document.getElementById('sigTabUploadBtn').classList.toggle('primary', mode === 'upload');
+      document.getElementById('sigDrawSection').style.display = mode === 'draw' ? 'block' : 'none';
+      document.getElementById('sigUploadSection').style.display = mode === 'upload' ? 'block' : 'none';
+    }
+
+    function initSignaturePad() {
+      const pad = document.getElementById('sigPadCanvas');
+      const pctx = pad.getContext('2d');
+      let drawing = false;
+
+      pad.addEventListener('pointerdown', (e) => {
+        drawing = true;
+        sigHasStrokes = true;
+        pad.setPointerCapture(e.pointerId);
+        const r = pad.getBoundingClientRect();
+        const scaleX = pad.width / r.width;
+        const scaleY = pad.height / r.height;
+        pctx.strokeStyle = document.getElementById('sigInkColor').value;
+        pctx.lineWidth = 3;
+        pctx.lineCap = 'round';
+        pctx.lineJoin = 'round';
+        pctx.beginPath();
+        pctx.moveTo((e.clientX - r.left) * scaleX, (e.clientY - r.top) * scaleY);
+      });
+
+      pad.addEventListener('pointermove', (e) => {
+        if (!drawing) return;
+        const r = pad.getBoundingClientRect();
+        const scaleX = pad.width / r.width;
+        const scaleY = pad.height / r.height;
+        pctx.lineTo((e.clientX - r.left) * scaleX, (e.clientY - r.top) * scaleY);
+        pctx.stroke();
+      });
+
+      pad.addEventListener('pointerup', () => { drawing = false; });
+    }
+
+    function clearSignaturePad() {
+      const pad = document.getElementById('sigPadCanvas');
+      pad.getContext('2d').clearRect(0, 0, pad.width, pad.height);
+      sigHasStrokes = false;
+    }
+
+    function insertSignatureToPage() {
+      const pg = state.pages[state.currentPageIndex];
+      if (sigMode === 'draw') {
+        if (!sigHasStrokes) return showToast('कृपया पहले हस्ताक्षर करें');
+        const pad = document.getElementById('sigPadCanvas');
+        const dataUrl = pad.toDataURL('image/png');
+        pushHistory();
+        const el = {
+          id: uid('sig'),
+          type: 'signature',
+          x: pg.width - 210,
+          y: pg.height - 130,
+          w: 150,
+          h: 58,
+          dataUrl
+        };
+        pg.elements.push(el);
+        state.selectedElementId = el.id;
+        closeModal('modalSignature');
+        setTool('select');
+        renderCanvas();
+        showToast('डिजिटल हस्ताक्षर जोड़ा गया');
+      } else {
+        const file = document.getElementById('sigFileInput').files[0];
+        if (!file) return showToast('कृपया हस्ताक्षर की इमेज चुनें');
+        const removeWhite = document.getElementById('sigRemoveWhiteBg').checked;
+        const reader = new FileReader();
+        reader.onload = () => {
+          const im = new Image();
+          im.onload = () => {
+            let finalUrl = reader.result;
+            if (removeWhite) {
+              const c = document.createElement('canvas');
+              c.width = im.width;
+              c.height = im.height;
+              const cx = c.getContext('2d');
+              cx.drawImage(im, 0, 0);
+              const imgData = cx.getImageData(0, 0, c.width, c.height);
+              const d = imgData.data;
+              for (let i = 0; i < d.length; i += 4) {
+                if (d[i] > 215 && d[i + 1] > 215 && d[i + 2] > 215) d[i + 3] = 0;
+              }
+              cx.putImageData(imgData, 0, 0);
+              finalUrl = c.toDataURL('image/png');
+            }
+            pushHistory();
+            const w = 150;
+            const h = w * (im.height / im.width);
+            const el = {
+              id: uid('sig'),
+              type: 'signature',
+              x: pg.width - 200,
+              y: pg.height - 130,
+              w,
+              h,
+              dataUrl: finalUrl
+            };
+            pg.elements.push(el);
+            state.selectedElementId = el.id;
+            closeModal('modalSignature');
+            setTool('select');
+            renderCanvas();
+            showToast('हस्ताक्षर इमेज जोड़ी गई');
+          };
+          im.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    /* ==========================================================================
+       CUSTOM LETTERHEAD (DESIGNER + IMAGE UPLOAD)
+       ========================================================================== */
+    let lhActiveTab = 'design';
+
+    function openLetterheadModal() {
+      if (!state.pages.length) addBlankPage();
+      openModal('modalLetterhead');
+    }
+
+    function switchLhTab(mode) {
+      lhActiveTab = mode;
+      document.getElementById('lhTabDesignBtn').classList.toggle('primary', mode === 'design');
+      document.getElementById('lhTabImgBtn').classList.toggle('primary', mode === 'image');
+      document.getElementById('lhDesignSection').style.display = mode === 'design' ? 'grid' : 'none';
+      document.getElementById('lhImageSection').style.display = mode === 'image' ? 'block' : 'none';
+    }
+
+    function readFileAsDataURL(file) {
+      return new Promise((resolve) => {
+        if (!file) return resolve(null);
+        const r = new FileReader();
+        r.onload = () => resolve(r.result);
+        r.readAsDataURL(file);
+      });
+    }
+
+    async function applyLetterhead() {
+      const scope = document.getElementById('lhApplyScope').value;
+      if (lhActiveTab === 'design') {
+        const logoFile = document.getElementById('lhLogoInput').files[0];
+        const logoDataUrl = await readFileAsDataURL(logoFile);
+        state.letterhead = {
+          mode: 'design',
+          scope,
+          title: document.getElementById('lhTitle').value || 'कार्यालय / संस्था का नाम',
+          subtitle: document.getElementById('lhSubtitle').value || '',
+          address: document.getElementById('lhAddress').value || '',
+          contact: document.getElementById('lhContact').value || '',
+          themeColor: document.getElementById('lhThemeColor').value,
+          logoDataUrl
+        };
+      } else {
+        const imgFile = document.getElementById('lhFullImgInput').files[0];
+        const imgDataUrl = await readFileAsDataURL(imgFile);
+        if (!imgDataUrl) return showToast('कृपया लेटरहेड इमेज चुनें');
+        state.letterhead = {
+          mode: 'image',
+          scope,
+          placement: document.getElementById('lhImgPlacement').value,
+          imgDataUrl
+        };
+      }
+      closeModal('modalLetterhead');
+      renderCanvas();
+      showToast('लेटरहेड लागू कर दिया गया!');
+    }
+
+    function removeLetterhead() {
+      state.letterhead = null;
+      closeModal('modalLetterhead');
+      renderCanvas();
+      showToast('लेटरहेड हटा दिया गया');
+    }
+
+    function drawLetterheadOnContext(c, pg, pageIdx) {
+      const lh = state.letterhead;
+      if (!lh) return;
+      if (lh.scope === 'first' && pageIdx !== 0) return;
+
+      c.save();
+      if (lh.mode === 'image' && lh.imgDataUrl) {
+        if (!lh._img) {
+          const im = new Image();
+          im.src = lh.imgDataUrl;
+          im.onload = () => renderCanvas();
+          lh._img = im;
+        }
+        if (lh._img && lh._img.complete) {
+          if (lh.placement === 'fullpage') {
+            c.drawImage(lh._img, 0, 0, pg.width, pg.height);
+          } else {
+            const bannerH = pg.height * 0.16;
+            c.drawImage(lh._img, 0, 0, pg.width, bannerH);
+          }
+        }
+      } else if (lh.mode === 'design') {
+        const padX = 32;
+        const topY = 22;
+        let textStartX = padX;
+
+        if (lh.logoDataUrl) {
+          if (!lh._logoImg) {
+            const im = new Image();
+            im.src = lh.logoDataUrl;
+            im.onload = () => renderCanvas();
+            lh._logoImg = im;
+          }
+          if (lh._logoImg && lh._logoImg.complete) {
+            c.drawImage(lh._logoImg, padX, topY, 54, 54);
+            textStartX = padX + 66;
+          }
+        }
+
+        c.fillStyle = lh.themeColor || '#991b1b';
+        c.font = 'bold 20px "NotoSansDevanagariLocal", sans-serif';
+        c.textBaseline = 'top';
+        c.fillText(lh.title, textStartX, topY);
+
+        if (lh.subtitle) {
+          c.fillStyle = '#334155';
+          c.font = '12px "NotoSansDevanagariLocal", sans-serif';
+          c.fillText(lh.subtitle, textStartX, topY + 26);
+        }
+
+        const subInfo = [lh.address, lh.contact].filter(Boolean).join('  |  ');
+        if (subInfo) {
+          c.fillStyle = '#475569';
+          c.font = '10.5px "NotoSansDevanagariLocal", sans-serif';
+          c.fillText(subInfo, textStartX, topY + 43);
+        }
+
+        // Double Decorative Border Line
+        const lineY = topY + 64;
+        c.strokeStyle = lh.themeColor || '#991b1b';
+        c.lineWidth = 2;
+        c.beginPath();
+        c.moveTo(padX, lineY);
+        c.lineTo(pg.width - padX, lineY);
+        c.stroke();
+
+        c.lineWidth = 0.8;
+        c.beginPath();
+        c.moveTo(padX, lineY + 3.5);
+        c.lineTo(pg.width - padX, lineY + 3.5);
+        c.stroke();
+      }
+      c.restore();
+    }
+
+    /* ==========================================================================
+       WATERMARK & PAGE NUMBERS
+       ========================================================================== */
+    function openWatermarkModal() {
+      if (!state.pages.length) addBlankPage();
+      openModal('modalWatermark');
+    }
+
+    async function applyWatermarkAndPn() {
+      const wmText = document.getElementById('wmText').value.trim();
+      const wmFile = document.getElementById('wmImageInput').files[0];
+      const wmImgUrl = await readFileAsDataURL(wmFile);
+
+      if (wmText || wmImgUrl) {
+        state.watermark = {
+          text: wmText,
+          imgDataUrl: wmImgUrl,
+          color: document.getElementById('wmColor').value,
+          opacity: parseFloat(document.getElementById('wmOpacity').value) || 0.18,
+          angle: parseInt(document.getElementById('wmAngle').value, 10) || -35
+        };
+      } else {
+        state.watermark = null;
+      }
+
+      state.pageNumbers = {
+        enabled: document.getElementById('pnEnabled').checked,
+        format: document.getElementById('pnFormat').value,
+        position: document.getElementById('pnPosition').value
+      };
+
+      closeModal('modalWatermark');
+      renderCanvas();
+      showToast('वॉटरमार्क और पेज नंबर अपडेट हो गए');
+    }
+
+    function clearWatermarkAndPn() {
+      state.watermark = null;
+      state.pageNumbers.enabled = false;
+      closeModal('modalWatermark');
+      renderCanvas();
+    }
+
+    function drawWatermarkOnContext(c, pg) {
+      const wm = state.watermark;
+      if (!wm) return;
+      c.save();
+      c.globalAlpha = wm.opacity;
+      c.translate(pg.width / 2, pg.height / 2);
+      c.rotate((wm.angle * Math.PI) / 180);
+
+      if (wm.imgDataUrl) {
+        if (!wm._img) {
+          const im = new Image();
+          im.src = wm.imgDataUrl;
+          im.onload = () => renderCanvas();
+          wm._img = im;
+        }
+        if (wm._img && wm._img.complete) {
+          const w = 240;
+          const h = w * (wm._img.height / wm._img.width);
+          c.drawImage(wm._img, -w / 2, -h / 2, w, h);
+        }
+      }
+      if (wm.text) {
+        c.fillStyle = wm.color || '#64748b';
+        c.font = 'bold 48px "NotoSansDevanagariLocal", sans-serif';
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        c.fillText(wm.text, 0, wm.imgDataUrl ? 140 : 0);
+      }
+      c.restore();
+    }
+
+    function drawPageNumberOnContext(c, pg, pageIdx, totalPages) {
+      const pn = state.pageNumbers;
+      if (!pn || !pn.enabled) return;
+      const label = pn.format
+        .replace('{n}', String(pageIdx + 1))
+        .replace('{total}', String(totalPages));
+
+      c.save();
+      c.fillStyle = '#334155';
+      c.font = '11px "NotoSansDevanagariLocal", sans-serif';
+      let x = pg.width / 2;
+      let y = pg.height - 20;
+      c.textAlign = 'center';
+
+      if (pn.position === 'bottom-right') {
+        x = pg.width - 32;
+        c.textAlign = 'right';
+      } else if (pn.position === 'bottom-left') {
+        x = 32;
+        c.textAlign = 'left';
+      } else if (pn.position === 'top-right') {
+        x = pg.width - 32;
+        y = 18;
+        c.textAlign = 'right';
+      }
+
+      c.fillText(label, x, y);
+      c.restore();
+    }
+
+    /* ==========================================================================
+       POWERFUL OFFLINE OCR (HINDI + ENGLISH VIA TESSERACT.JS)
+       ========================================================================== */
+    function openOcrModal() {
+      if (!state.pages.length) return showToast('पहले कोई PDF या इमेज पेज खोलें');
+      openModal('modalOcr');
+    }
+
+    async function runOfflineOcr() {
+      if (!window.Tesseract) {
+        return showToast('Tesseract.js लोड नहीं हुआ है');
+      }
+      const pg = state.pages[state.currentPageIndex];
+      const lang = document.getElementById('ocrLang').value;
+      const btn = document.getElementById('btnRunOcr');
+      const progWrap = document.getElementById('ocrProgressWrap');
+      const progBar = document.getElementById('ocrProgressBar');
+      const statusTxt = document.getElementById('ocrStatusText');
+      const pctTxt = document.getElementById('ocrPctText');
+
+      btn.disabled = true;
+      progWrap.style.display = 'block';
+      progBar.style.width = '5%';
+
+      try {
+        // Render clean page snapshot at 2x resolution for crisp OCR
+        const snap = document.createElement('canvas');
+        snap.width = Math.round(pg.width * 2);
+        snap.height = Math.round(pg.height * 2);
+        const sctx = snap.getContext('2d');
+        sctx.fillStyle = '#ffffff';
+        sctx.fillRect(0, 0, snap.width, snap.height);
+        const base = await getBasePageCanvas(pg);
+        if (base) sctx.drawImage(base, 0, 0, snap.width, snap.height);
+
+        const workerOpts = {
+          logger: (m) => {
+            if (m.status) statusTxt.textContent = `स्थिति: ${m.status}`;
+            if (typeof m.progress === 'number') {
+              const p = Math.round(m.progress * 100);
+              progBar.style.width = p + '%';
+              pctTxt.textContent = p + '%';
+            }
+          }
+        };
+
+        if (window.__OCR_LOCAL_AVAILABLE__) {
+          workerOpts.workerPath = 'offline-assets/js/worker.min.js';
+          workerOpts.langPath = 'offline-assets/tessdata';
+          workerOpts.corePath = 'offline-assets/js/tesseract-core-simd.wasm.js';
+        }
+
+        const worker = await Tesseract.createWorker(lang, 1, workerOpts);
+        const ret = await worker.recognize(snap);
+        await worker.terminate();
+
+        document.getElementById('ocrResultText').value = ret.data.text || '';
+        state.lastOcrWords = (ret.data.words || []).map(w => ({
+          text: w.text,
+          x: w.bbox.x0 / 2,
+          y: w.bbox.y0 / 2,
+          w: (w.bbox.x1 - w.bbox.x0) / 2,
+          h: (w.bbox.y1 - w.bbox.y0) / 2
+        }));
+        showToast('OCR स्कैन पूरा हुआ!');
+      } catch (err) {
+        console.error(err);
+        showToast('OCR त्रुटि: offline-assets/tessdata फ़ाइलें जाँचें');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function copyOcrText() {
+      const txt = document.getElementById('ocrResultText').value;
+      if (!txt) return;
+      navigator.clipboard.writeText(txt);
+      showToast('टेक्स्ट क्लिपबोर्ड पर कॉपी हो गया!');
+    }
+
+    function insertOcrAsEditableBox() {
+      const txt = document.getElementById('ocrResultText').value.trim();
+      if (!txt) return showToast('पहले OCR स्कैन चलाएं');
+      pushHistory();
+      const pg = state.pages[state.currentPageIndex];
+      const el = {
+        id: uid('ocr_txt'),
+        type: 'text',
+        x: 40,
+        y: 60,
+        w: pg.width - 80,
+        h: 120,
+        text: txt,
+        fontFamily: 'NotoSansDevanagariLocal',
+        fontSize: 14,
+        color: '#111827',
+        hasBg: true,
+        bgColor: '#ffffff',
+        bold: false,
+        italic: false
+      };
+      pg.elements.push(el);
+      state.selectedElementId = el.id;
+      closeModal('modalOcr');
+      setTool('select');
+      renderCanvas();
+      showToast('OCR टेक्स्ट बॉक्स पेज पर जोड़ दिया गया');
+    }
+
+    function embedSearchableOcrLayer() {
+      if (!state.lastOcrWords.length) {
+        return showToast('पहले वर्तमान पेज पर OCR स्कैन चलाएं');
+      }
+      pushHistory();
+      const pg = state.pages[state.currentPageIndex];
+      pg.elements = pg.elements.filter(e => e.type !== 'ocr-hidden');
+      for (const w of state.lastOcrWords) {
+        pg.elements.push({
+          id: uid('ocrw'),
+          type: 'ocr-hidden',
+          x: w.x,
+          y: w.y,
+          w: w.w,
+          h: w.h,
+          text: w.text
+        });
+      }
+      closeModal('modalOcr');
+      showToast(`${state.lastOcrWords.length} शब्दों की Searchable PDF लेयर जोड़ी गई!`);
+    }
+
+    /* ==========================================================================
+       INDEXEDDB OFFLINE DRAFTS SAVE & LOAD
+       ========================================================================== */
+    function openDraftsDb() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open('OfflinePdfEditorProDB', 1);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains('drafts')) {
+            db.createObjectStore('drafts', { keyPath: 'id' });
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function saveDraftToIndexedDB() {
+      if (!state.pages.length) return showToast('सेव करने के लिए कोई पेज नहीं है');
+      const name = prompt('ड्राफ्ट का नाम लिखें:', document.getElementById('exportFileName').value.replace(/\.pdf$/i, ''));
+      if (!name) return;
+
+      const db = await openDraftsDb();
+      const cleanPages = state.pages.map(pg => ({
+        ...pg,
+        elements: pg.elements.map(({ _imgObj, ...rest }) => rest)
+      }));
+
+      const record = {
+        id: uid('draft'),
+        name,
+        updatedAt: new Date().toLocaleString('hi-IN'),
+        sourceDocs: state.sourceDocs,
+        pages: cleanPages,
+        letterhead: state.letterhead ? { ...state.letterhead, _img: undefined, _logoImg: undefined } : null,
+        watermark: state.watermark ? { ...state.watermark, _img: undefined } : null,
+        pageNumbers: state.pageNumbers
+      };
+
+      const tx = db.transaction('drafts', 'readwrite');
+      tx.objectStore('drafts').put(record);
+      tx.oncomplete = () => showToast(`ड्राफ्ट "${name}" ऑफ़लाइन सेव हो गया!`);
+    }
+
+    async function openDraftsModal() {
+      openModal('modalDrafts');
+      const container = document.getElementById('draftsListContainer');
+      const db = await openDraftsDb();
+      const tx = db.transaction('drafts', 'readonly');
+      const req = tx.objectStore('drafts').getAll();
+
+      req.onsuccess = () => {
+        const drafts = req.result || [];
+        if (!drafts.length) {
+          container.innerHTML = '<p style="color:var(--text-muted);">अभी तक कोई ऑफ़लाइन ड्राफ्ट सेव नहीं है।</p>';
+          return;
+        }
+        container.innerHTML = '';
+        drafts.reverse().forEach(d => {
+          const row = document.createElement('div');
+          row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:10px; background:var(--bg-app); border:1px solid var(--border); border-radius:8px;';
+          row.innerHTML = `
+            <div>
+              <strong>${d.name}</strong>
+              <div style="font-size:11px; color:var(--text-muted);">${d.pages.length} पेज • ${d.updatedAt}</div>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button class="primary" onclick="loadDraftFromDb('${d.id}')">खोलें</button>
+              <button class="danger" onclick="deleteDraftFromDb('${d.id}')">🗑️</button>
+            </div>
+          `;
+          container.appendChild(row);
+        });
+      };
+    }
+
+    async function loadDraftFromDb(id) {
+      const db = await openDraftsDb();
+      const tx = db.transaction('drafts', 'readonly');
+      const req = tx.objectStore('drafts').get(id);
+      req.onsuccess = async () => {
+        const d = req.result;
+        if (!d) return;
+        state.sourceDocs = d.sourceDocs || {};
+        state.pdfJsDocs = {};
+        state.pageRenderCache = {};
+
+        for (const [docId, bytes] of Object.entries(state.sourceDocs)) {
+          state.pdfJsDocs[docId] = await pdfjsLib.getDocument({ data: bytes.slice() }).promise;
+        }
+
+        state.pages = d.pages || [];
+        state.letterhead = d.letterhead || null;
+        state.watermark = d.watermark || null;
+        state.pageNumbers = d.pageNumbers || { enabled: false, format: 'Page {n} of {total}', position: 'bottom-center' };
+        state.currentPageIndex = 0;
+        state.selectedElementId = null;
+        closeModal('modalDrafts');
+        renderAll();
+        showToast(`ड्राफ्ट "${d.name}" लोड हो गया!`);
+      };
+    }
+
+    async function deleteDraftFromDb(id) {
+      const db = await openDraftsDb();
+      const tx = db.transaction('drafts', 'readwrite');
+      tx.objectStore('drafts').delete(id);
+      tx.oncomplete = () => openDraftsModal();
+    }
+
+    /* ==========================================================================
+       HIGH-DPI EXPORT ENGINE (WITH CRISP HINDI SHAPING & PDF ENCRYPTION)
+       ========================================================================== */
+    function openExportModal() {
+      if (!state.pages.length) return showToast('डाउनलोड करने के लिए कम से कम 1 पेज चाहिए');
+      openModal('modalExport');
+    }
+
+    function hexToRgbObj(hex) {
+      const clean = (hex || '#000000').replace('#', '');
+      const n = parseInt(clean.length === 3 ? clean.split('').map(c => c + c).join('') : clean, 16);
+      return PDFLib.rgb(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255);
+    }
+
+    // Renders complex Hindi Devanagari or styled text at 300 DPI via browser HarfBuzz engine
+    function renderTextBlockToPng(el) {
+      const scale = 4; // ~288 DPI crisp vector-like clarity
+      const size = el.fontSize || 18;
+      const weight = el.bold ? 'bold' : 'normal';
+      const italic = el.italic ? 'italic' : 'normal';
+      const family = el.fontFamily || 'NotoSansDevanagariLocal';
+      const lines = (el.text || '').split('\n');
+      const lineHeight = size * 1.32;
+
+      const tmp = document.createElement('canvas');
+      const tctx = tmp.getContext('2d');
+      tctx.font = `${italic} ${weight} ${size}px "${family}", sans-serif`;
+      let maxW = 10;
+      lines.forEach(l => {
+        const w = tctx.measureText(l).width;
+        if (w > maxW) maxW = w;
+      });
+      const totalH = Math.max(lineHeight, lines.length * lineHeight);
+
+      tmp.width = Math.ceil((maxW + 8) * scale);
+      tmp.height = Math.ceil((totalH + 6) * scale);
+      tctx.scale(scale, scale);
+
+      if (el.hasBg) {
+        tctx.fillStyle = el.bgColor || '#ffffff';
+        tctx.fillRect(0, 0, maxW + 8, totalH + 6);
+      }
+
+      tctx.font = `${italic} ${weight} ${size}px "${family}", sans-serif`;
+      tctx.fillStyle = el.color || '#111827';
+      tctx.textBaseline = 'top';
+      lines.forEach((l, i) => tctx.fillText(l, 2, 2 + i * lineHeight));
+
+      return {
+        dataUrl: tmp.toDataURL('image/png'),
+        w: maxW + 8,
+        h: totalH + 6
+      };
+    }
+
+    async function buildPdfBytes(pageIndexList = null) {
+      const { PDFDocument, StandardFonts, degrees } = PDFLib;
+      const outDoc = await PDFDocument.create();
+      if (window.fontkit) outDoc.registerFontkit(fontkit);
+
+      const loadedSourceDocs = {};
+      const helvetica = await outDoc.embedFont(StandardFonts.Helvetica);
+
+      const indices = pageIndexList || state.pages.map((_, idx) => idx);
+
+      for (let outIdx = 0; outIdx < indices.length; outIdx++) {
+        const srcIdx = indices[outIdx];
+        const pg = state.pages[srcIdx];
+        let pdfPage;
+
+        if (pg.docId && state.sourceDocs[pg.docId]) {
+          if (!loadedSourceDocs[pg.docId]) {
+            loadedSourceDocs[pg.docId] = await PDFDocument.load(state.sourceDocs[pg.docId], { ignoreEncryption: true });
+          }
+          const [copied] = await outDoc.copyPages(loadedSourceDocs[pg.docId], [pg.sourcePageIndex]);
+          if (pg.rotation) {
+            const existingRot = copied.getRotation().angle;
+            copied.setRotation(degrees((existingRot + pg.rotation) % 360));
+          }
+          pdfPage = outDoc.addPage(copied);
+        } else {
+          pdfPage = outDoc.addPage([pg.width, pg.height]);
+        }
+
+        const { width: pW, height: pH } = pdfPage.getSize();
+
+        // 1. Letterhead Overlay
+        if (state.letterhead && (state.letterhead.scope === 'all' || outIdx === 0)) {
+          const lhCanvas = document.createElement('canvas');
+          lhCanvas.width = Math.round(pW * 3);
+          lhCanvas.height = Math.round(pH * 3);
+          const lctx = lhCanvas.getContext('2d');
+          lctx.scale(3, 3);
+          drawLetterheadOnContext(lctx, { width: pW, height: pH }, outIdx);
+          const lhPng = await outDoc.embedPng(lhCanvas.toDataURL('image/png'));
+          pdfPage.drawImage(lhPng, { x: 0, y: 0, width: pW, height: pH });
+        }
+
+        // 2. Page Elements
+        for (const el of pg.elements) {
+          const pdfX = el.x;
+          const pdfY = pH - el.y - el.h;
+
+          if (el.type === 'whiteout' || el.type === 'rect') {
+            pdfPage.drawRectangle({
+              x: pdfX,
+              y: pdfY,
+              width: el.w,
+              height: el.h,
+              color: el.fillColor ? hexToRgbObj(el.fillColor) : undefined,
+              borderColor: el.strokeColor ? hexToRgbObj(el.strokeColor) : undefined,
+              borderWidth: el.strokeWidth || 0
+            });
+          } else if (el.type === 'highlight') {
+            pdfPage.drawRectangle({
+              x: pdfX,
+              y: pdfY,
+              width: el.w,
+              height: el.h,
+              color: PDFLib.rgb(0.98, 0.8, 0.08),
+              opacity: 0.38
+            });
+          } else if (el.type === 'circle') {
+            pdfPage.drawEllipse({
+              x: pdfX + el.w / 2,
+              y: pdfY + el.h / 2,
+              xScale: Math.abs(el.w / 2),
+              yScale: Math.abs(el.h / 2),
+              color: el.fillColor ? hexToRgbObj(el.fillColor) : undefined,
+              borderColor: hexToRgbObj(el.strokeColor || '#ef4444'),
+              borderWidth: el.strokeWidth || 2
+            });
+          } else if (el.type === 'arrow' || el.type === 'pen') {
+            // Render vector paths cleanly via high-DPI transparent overlay
+            const boxX = Math.min(el.x, el.x + el.w) - 20;
+            const boxY = Math.min(el.y, el.y + el.h) - 20;
+            const boxW = Math.abs(el.w) + 40;
+            const boxH = Math.abs(el.h) + 40;
+            const sc = document.createElement('canvas');
+            sc.width = Math.ceil(boxW * 3);
+            sc.height = Math.ceil(boxH * 3);
+            const sctx = sc.getContext('2d');
+            sctx.scale(3, 3);
+            sctx.translate(-boxX, -boxY);
+            drawElementOnContext(sctx, el);
+            const png = await outDoc.embedPng(sc.toDataURL('image/png'));
+            pdfPage.drawImage(png, { x: boxX, y: pH - boxY - boxH, width: boxW, height: boxH });
+          } else if (el.type === 'image' || el.type === 'signature') {
+            const isJpg = el.dataUrl.startsWith('data:image/jpeg');
+            const embedded = isJpg ? await outDoc.embedJpg(el.dataUrl) : await outDoc.embedPng(el.dataUrl);
+            pdfPage.drawImage(embedded, { x: pdfX, y: pdfY, width: el.w, height: el.h });
+          } else if (el.type === 'text') {
+            const rendered = renderTextBlockToPng(el);
+            const png = await outDoc.embedPng(rendered.dataUrl);
+            pdfPage.drawImage(png, {
+              x: el.x - 2,
+              y: pH - el.y - rendered.h + 2,
+              width: rendered.w,
+              height: rendered.h
+            });
+          } else if (el.type === 'ocr-hidden') {
+            // Invisible searchable text layer
+            const asciiSafe = (el.text || '').replace(/[^\x20-\x7E]/g, ' ');
+            if (asciiSafe.trim()) {
+              pdfPage.drawText(asciiSafe, {
+                x: pdfX,
+                y: pdfY,
+                size: Math.max(6, el.h * 0.8),
+                font: helvetica,
+                opacity: 0
+              });
+            }
+          }
+        }
+
+        // 3. Watermark & Page Number Overlay
+        if (state.watermark || (state.pageNumbers && state.pageNumbers.enabled)) {
+          const ovCanvas = document.createElement('canvas');
+          ovCanvas.width = Math.round(pW * 2.5);
+          ovCanvas.height = Math.round(pH * 2.5);
+          const octx = ovCanvas.getContext('2d');
+          octx.scale(2.5, 2.5);
+          drawWatermarkOnContext(octx, { width: pW, height: pH });
+          drawPageNumberOnContext(octx, { width: pW, height: pH }, outIdx, indices.length);
+          const ovPng = await outDoc.embedPng(ovCanvas.toDataURL('image/png'));
+          pdfPage.drawImage(ovPng, { x: 0, y: 0, width: pW, height: pH });
+        }
+      }
+
+      return await outDoc.save({ useObjectStreams: false });
+    }
+
+    async function exportFinalPdf() {
+      const btn = document.getElementById('btnConfirmExport');
+      btn.disabled = true;
+      btn.textContent = '⏳ तैयार हो रहा है...';
+
+      try {
+        let pdfBytes = await buildPdfBytes();
+        const password = document.getElementById('exportPassword').value;
+        if (password) {
+          pdfBytes = encryptPdfStandardRC4(pdfBytes, password);
+        }
+
+        let fileName = document.getElementById('exportFileName').value.trim() || 'Edited_Document.pdf';
+        if (!fileName.toLowerCase().endsWith('.pdf')) fileName += '.pdf';
+
+        downloadBytes(pdfBytes, fileName);
+        closeModal('modalExport');
+        showToast(password ? 'पासवर्ड-सुरक्षित PDF डाउनलोड हो गई!' : 'PDF सफलतापूर्वक डाउनलोड हो गई!');
+      } catch (err) {
+        console.error(err);
+        showToast('PDF एक्सपोर्ट में त्रुटि आई');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🚀 PDF तैयार करें और सेव करें';
+      }
+    }
+
+    function downloadBytes(uint8Arr, filename) { window.__lastPdfName = filename;
+      const blob = new Blob([uint8Arr], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }
+
+    /* ==========================================================================
+       PURE-JS STANDARD PDF 128-BIT RC4 ENCRYPTION (NO EXTERNAL DEPENDENCY)
+       ========================================================================== */
+    function md5Bytes(data) {
+      const k = new Uint32Array([
+        0xd76aa478,0xe8c7b756,0x242070db,0xc1bdceee,0xf57c0faf,0x4787c62a,0xa8304613,0xfd469501,
+        0x698098d8,0x8b44f7af,0xffff5bb1,0x895cd7be,0x6b901122,0xfd987193,0xa679438e,0x49b40821,
+        0xf61e2562,0xc040b340,0x265e5a51,0xe9b6c7aa,0xd62f105d,0x02441453,0xd8a1e681,0xe7d3fbc8,
+        0x21e1cde6,0xc33707d6,0xf4d50d87,0x455a14ed,0xa9e3e905,0xfcefa3f8,0x676f02d9,0x8d2a4c8a,
+        0xfffa3942,0x8771f681,0x6d9d6122,0xfde5380c,0xa4beea44,0x4bdecfa9,0xf6bb4b60,0xbebfbc70,
+        0x289b7ec6,0xeaa127fa,0xd4ef3085,0x04881d05,0xd9d4d039,0xe6db99e5,0x1fa27cf8,0xc4ac5665,
+        0xf4292244,0x432aff97,0xab9423a7,0xfc93a039,0x655b59c3,0x8f0ccc92,0xffeff47d,0x85845dd1,
+        0x6fa87e4f,0xfe2ce6e0,0xa3014314,0x4e0811a1,0xf7537e82,0xbd3af235,0x2ad7d2bb,0xeb86d391
+      ]);
+      const s = [
+        7,12,17,22,7,12,17,22,7,12,17,22,7,12,17,22,
+        5,9,14,20,5,9,14,20,5,9,14,20,5,9,14,20,
+        4,11,16,23,4,11,16,23,4,11,16,23,4,11,16,23,
+        6,10,15,21,6,10,15,21,6,10,15,21,6,10,15,21
+      ];
+      const origLen = data.length;
+      const bitLen = origLen * 8;
+      const padLen = (((origLen + 8) >> 6) + 1) * 64;
+      const buf = new Uint8Array(padLen);
+      buf.set(data);
+      buf[origLen] = 0x80;
+      const dv = new DataView(buf.buffer);
+      dv.setUint32(padLen - 8, bitLen >>> 0, true);
+      dv.setUint32(padLen - 4, Math.floor(bitLen / 0x100000000), true);
+
+      let a0 = 0x67452301, b0 = 0xefcdab89, c0 = 0x98badcfe, d0 = 0x10325476;
+      for (let i = 0; i < padLen; i += 64) {
+        const M = new Uint32Array(16);
+        for (let j = 0; j < 16; j++) M[j] = dv.getUint32(i + j * 4, true);
+        let A = a0, B = b0, C = c0, D = d0;
+        for (let j = 0; j < 64; j++) {
+          let F, g;
+          if (j < 16) { F = (B & C) | (~B & D); g = j; }
+          else if (j < 32) { F = (D & B) | (~D & C); g = (5 * j + 1) % 16; }
+          else if (j < 48) { F = B ^ C ^ D; g = (3 * j + 5) % 16; }
+          else { F = C ^ (B | ~D); g = (7 * j) % 16; }
+          F = (F + A + k[j] + M[g]) >>> 0;
+          A = D; D = C; C = B;
+          B = (B + ((F << s[j]) | (F >>> (32 - s[j])))) >>> 0;
+        }
+        a0 = (a0 + A) >>> 0; b0 = (b0 + B) >>> 0; c0 = (c0 + C) >>> 0; d0 = (d0 + D) >>> 0;
+      }
+      const out = new Uint8Array(16);
+      const outDv = new DataView(out.buffer);
+      outDv.setUint32(0, a0, true); outDv.setUint32(4, b0, true);
+      outDv.setUint32(8, c0, true); outDv.setUint32(12, d0, true);
+      return out;
+    }
+
+    function rc4Bytes(key, data) {
+      const S = new Uint8Array(256);
+      for (let i = 0; i < 256; i++) S[i] = i;
+      let j = 0;
+      for (let i = 0; i < 256; i++) {
+        j = (j + S[i] + key[i % key.length]) & 255;
+        const t = S[i]; S[i] = S[j]; S[j] = t;
+      }
+      const out = new Uint8Array(data.length);
+      let i = 0; j = 0;
+      for (let k = 0; k < data.length; k++) {
+        i = (i + 1) & 255;
+        j = (j + S[i]) & 255;
+        const t = S[i]; S[i] = S[j]; S[j] = t;
+        out[k] = data[k] ^ S[(S[i] + S[j]) & 255];
+      }
+      return out;
+    }
+
+    function toHex(bytes) {
+      return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    function encryptPdfStandardRC4(pdfBytes, userPwd) {
+      const PAD = new Uint8Array([
+        0x28,0xBF,0x4E,0x5E,0x4E,0x75,0x8A,0x41,0x64,0x00,0x4E,0x56,0xFF,0xFA,0x01,0x08,
+        0x2E,0x2E,0x00,0xB6,0xD0,0x68,0x3E,0x80,0x2F,0x0C,0xA9,0xFE,0x64,0x53,0x69,0x7A
+      ]);
+      const padPwd = (pwd) => {
+        const enc = new TextEncoder().encode(pwd.slice(0, 32));
+        const res = new Uint8Array(32);
+        res.set(enc);
+        res.set(PAD.slice(0, 32 - enc.length), enc.length);
+        return res;
+      };
+
+      const fileId = md5Bytes(new TextEncoder().encode(String(Date.now()) + Math.random()));
+      const P = -4; // Allow printing & standard access after password unlock
+
+      // Compute Owner Key (O)
+      let ownerHash = md5Bytes(padPwd(userPwd + '_owner'));
+      for (let i = 0; i < 50; i++) ownerHash = md5Bytes(ownerHash);
+      const O = rc4Bytes(ownerHash.slice(0, 16), padPwd(userPwd));
+
+      // Compute File Encryption Key
+      const keyInput = new Uint8Array(32 + 32 + 4 + 16);
+      keyInput.set(padPwd(userPwd), 0);
+      keyInput.set(O, 32);
+      new DataView(keyInput.buffer).setInt32(64, P, true);
+      keyInput.set(fileId, 68);
+      let encKey = md5Bytes(keyInput);
+      for (let i = 0; i < 50; i++) encKey = md5Bytes(encKey.slice(0, 16));
+      encKey = encKey.slice(0, 16);
+
+      // Compute User Key (U)
+      const uHashInput = new Uint8Array(32 + 16);
+      uHashInput.set(PAD, 0);
+      uHashInput.set(fileId, 32);
+      let U = rc4Bytes(encKey, md5Bytes(uHashInput));
+      for (let i = 1; i <= 19; i++) {
+        const tmpKey = encKey.map(b => b ^ i);
+        U = rc4Bytes(tmpKey, U);
+      }
+      const UFull = new Uint8Array(32);
+      UFull.set(U);
+
+      // Parse classic xref objects from pdf-lib output
+      const latin1 = new TextDecoder('latin1').decode(pdfBytes);
+      const startxrefMatch = latin1.match(/startxref\s+(\d+)/);
+      const rootMatch = latin1.match(/\/Root\s+(\d+\s+\d+\s+R)/);
+      const sizeMatch = latin1.match(/\/Size\s+(\d+)/);
+      if (!startxrefMatch || !rootMatch || !sizeMatch) return pdfBytes;
+
+      const origSize = parseInt(sizeMatch[1], 10);
+      const encryptObjNum = origSize;
+
+      // Encrypt streams & strings in each indirect object
+      const objRegex = /(\d+)\s+(\d+)\s+obj\b([\s\S]*?)\bendobj\b/g;
+      const newChunks = [new TextEncoder().encode('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n')];
+      let offset = newChunks[0].length;
+      const offsets = {};
+      let m;
+
+      while ((m = objRegex.exec(latin1)) !== null) {
+        const objNum = parseInt(m[1], 10);
+        const genNum = parseInt(m[2], 10);
+        const bodyStart = m.index + m[0].indexOf('obj') + 3;
+        const bodyEnd = m.index + m[0].lastIndexOf('endobj');
+        const rawBody = pdfBytes.slice(bodyStart, bodyEnd);
+
+        // Derive per-object RC4 key
+        const objKeyIn = new Uint8Array(21);
+        objKeyIn.set(encKey, 0);
+        objKeyIn[16] = objNum & 0xff;
+        objKeyIn[17] = (objNum >> 8) & 0xff;
+        objKeyIn[18] = (objNum >> 16) & 0xff;
+        objKeyIn[19] = genNum & 0xff;
+        objKeyIn[20] = (genNum >> 8) & 0xff;
+        const objKey = md5Bytes(objKeyIn).slice(0, 16);
+
+        const bodyText = new TextDecoder('latin1').decode(rawBody);
+        const streamIdx = bodyText.indexOf('stream');
+        let finalObjBytes;
+
+        if (streamIdx !== -1) {
+          let dataStart = streamIdx + 6;
+          if (rawBody[dataStart] === 13 && rawBody[dataStart + 1] === 10) dataStart += 2;
+          else if (rawBody[dataStart] === 10) dataStart += 1;
+
+          const endStreamIdx = bodyText.lastIndexOf('endstream');
+          let dataEnd = endStreamIdx;
+          if (rawBody[dataEnd - 1] === 10) dataEnd--;
+          if (rawBody[dataEnd - 1] === 13) dataEnd--;
+
+          const encStream = rc4Bytes(objKey, rawBody.slice(dataStart, dataEnd));
+          const headerPart = new TextEncoder().encode(`${objNum} ${genNum} obj` + bodyText.slice(0, dataStart));
+          const footerPart = new TextEncoder().encode('\nendstream\nendobj\n');
+          finalObjBytes = new Uint8Array(headerPart.length + encStream.length + footerPart.length);
+          finalObjBytes.set(headerPart, 0);
+          finalObjBytes.set(encStream, headerPart.length);
+          finalObjBytes.set(footerPart, headerPart.length + encStream.length);
+        } else {
+          const fullObj = new TextEncoder().encode(`${objNum} ${genNum} obj` + bodyText + 'endobj\n');
+          finalObjBytes = fullObj;
+        }
+
+        offsets[objNum] = offset;
+        newChunks.push(finalObjBytes);
+        offset += finalObjBytes.length;
+      }
+
+      // Add Encrypt Dictionary Object
+      const encDictStr = `${encryptObjNum} 0 obj\n<< /Filter /Standard /V 2 /R 3 /Length 128 /P ${P} /O <${toHex(O)}> /U <${toHex(UFull)}> >>\nendobj\n`;
+      const encDictBytes = new TextEncoder().encode(encDictStr);
+      offsets[encryptObjNum] = offset;
+      newChunks.push(encDictBytes);
+      offset += encDictBytes.length;
+
+      // Build xref & trailer
+      const xrefOffset = offset;
+      let xrefStr = `xref\n0 ${encryptObjNum + 1}\n0000000000 65535 f \n`;
+      for (let i = 1; i <= encryptObjNum; i++) {
+        const off = offsets[i] || 0;
+        xrefStr += String(off).padStart(10, '0') + (off ? ' 00000 n \n' : ' 65535 f \n');
+      }
+      xrefStr += `trailer\n<< /Size ${encryptObjNum + 1} /Root ${rootMatch[1]} /Encrypt ${encryptObjNum} 0 R /ID [<${toHex(fileId)}> <${toHex(fileId)}>] >>\nstartxref\n${xrefOffset}\n%%EOF`;
+      newChunks.push(new TextEncoder().encode(xrefStr));
+
+      const totalLen = newChunks.reduce((acc, c) => acc + c.length, 0);
+      const merged = new Uint8Array(totalLen);
+      let pos = 0;
+      for (const c of newChunks) {
+        merged.set(c, pos);
+        pos += c.length;
+      }
+      return merged;
+    }
+  </script>
+</body>
+</html>
