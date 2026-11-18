@@ -4,7 +4,7 @@ android {
     namespace = "com.offline.pdfeditor"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.offline.pdfeditor"
+        applicationId "com.apmbs.offlinepdfeditor"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
