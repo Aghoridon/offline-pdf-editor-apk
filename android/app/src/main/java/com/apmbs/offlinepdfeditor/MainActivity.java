@@ -1,60 +1,72 @@
 package com.apmbs.offlinepdfeditor;
-import android.content.*; import android.net.Uri; import android.os.*; import android.provider.MediaStore;
-import android.speech.tts.TextToSpeech; import android.util.Base64; import android.webkit.*; import android.widget.Toast;
-import androidx.core.content.FileProvider; import com.getcapacitor.BridgeActivity;
-import java.io.*; import java.util.Locale;
+import android.content.ClipData;
+import android.content.ContentValues;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.util.Base64;
+import android.webkit.JavascriptInterface;
+import androidx.core.content.FileProvider;
+import com.getcapacitor.BridgeActivity;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 
-public class MainActivity extends BridgeActivity implements TextToSpeech.OnInitListener {
-  private TextToSpeech tts; private boolean ttsReady = false;
-  @Override protected void onCreate(Bundle b) {
-    super.onCreate(b); tts = new TextToSpeech(this, this);
-    WebView w = getBridge().getWebView();
-    if (w != null) { w.addJavascriptInterface(new Bridge(), "AndroidBlobDownloader"); w.addJavascriptInterface(new Bridge(), "AndroidNativeBridge"); }
+public class MainActivity extends BridgeActivity {
+  @Override
+  public void onStart() {
+    super.onStart();
+    if (this.bridge != null && this.bridge.getWebView() != null) {
+      this.bridge.getWebView().addJavascriptInterface(new ApmbsBridge(), "AndroidBridge");
+    }
   }
-  @Override public void onInit(int s) { if (s == TextToSpeech.SUCCESS) ttsReady = true; }
-  @Override public void onDestroy() { if (tts != null) { tts.stop(); tts.shutdown(); } super.onDestroy(); }
-  public class Bridge {
-    @JavascriptInterface public void saveBase64File(String d, String n, String m) { saveBase64File(d, n, m, "APMBS_Offline_PDFs"); }
-    @JavascriptInterface public void saveBase64File(String d, String n, String m, String sub) {
+  public class ApmbsBridge {
+    @JavascriptInterface
+    public String saveFile(String b64, String fileName, String mime) {
       try {
-        byte[] bytes = Base64.decode(d, Base64.DEFAULT);
+        byte[] data = Base64.decode(b64, Base64.DEFAULT);
+        String safeMime = (mime != null && !mime.isEmpty()) ? mime : "application/octet-stream";
         if (Build.VERSION.SDK_INT >= 29) {
-          ContentValues v = new ContentValues();
-          v.put(MediaStore.Downloads.DISPLAY_NAME, n); v.put(MediaStore.Downloads.MIME_TYPE, m);
-          v.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/" + sub);
-          Uri u = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, v);
-          if (u != null) try (OutputStream o = getContentResolver().openOutputStream(u)) { if (o != null) o.write(bytes); }
-        } else {
-          File dir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), sub);
-          if (!dir.exists()) dir.mkdirs();
-          try (FileOutputStream f = new FileOutputStream(new File(dir, n))) { f.write(bytes); }
+          ContentValues cv = new ContentValues();
+          cv.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
+          cv.put(MediaStore.MediaColumns.MIME_TYPE, safeMime);
+          cv.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/APMBS_Notes");
+          Uri uri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, cv);
+          if (uri != null) {
+            try (OutputStream os = getContentResolver().openOutputStream(uri)) { if (os != null) os.write(data); }
+            return "Download/APMBS_Notes/" + fileName;
+          }
         }
-        runOnUiThread(() -> Toast.makeText(MainActivity.this, "Saved: Downloads/" + sub + "/" + n, Toast.LENGTH_SHORT).show());
-      } catch (Exception e) { runOnUiThread(() -> Toast.makeText(MainActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show()); }
-    }
-    @JavascriptInterface public void textToAudioFile(String txt, String lang, float rate, String n) {
-      try {
-        if (!ttsReady || tts == null) { runOnUiThread(() -> Toast.makeText(MainActivity.this, "TTS Not Ready", Toast.LENGTH_SHORT).show()); return; }
-        tts.setLanguage(Locale.forLanguageTag(lang)); tts.setSpeechRate(rate);
-        File dir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "APMBS_Converted");
+        File dir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "APMBS_Notes");
         if (!dir.exists()) dir.mkdirs();
-        tts.synthesizeToFile(txt, new Bundle(), new File(dir, n), "tts_" + System.currentTimeMillis());
-        runOnUiThread(() -> Toast.makeText(MainActivity.this, "Audio Saved: Downloads/APMBS_Converted/" + n, Toast.LENGTH_LONG).show());
-      } catch (Exception e) { runOnUiThread(() -> Toast.makeText(MainActivity.this, "TTS Error: " + e.getMessage(), Toast.LENGTH_LONG).show()); }
+        File f = new File(dir, fileName);
+        try (FileOutputStream fos = new FileOutputStream(f)) { fos.write(data); }
+        return "Download/APMBS_Notes/" + fileName;
+      } catch (Exception e) { return "Error: " + e.getMessage(); }
     }
-    @JavascriptInterface public void sendFeedbackWithScreenshot(String to, String sub, String body, String b64) {
+    @JavascriptInterface
+    public String shareFile(String b64, String fileName, String mime) {
       try {
-        Intent i = new Intent(Intent.ACTION_SEND); i.setType("image/png");
-        i.putExtra(Intent.EXTRA_EMAIL, new String[]{to}); i.putExtra(Intent.EXTRA_SUBJECT, sub); i.putExtra(Intent.EXTRA_TEXT, body);
-        if (b64 != null && !b64.isEmpty()) {
-          File cd = new File(getCacheDir(), "shared_screenshots"); if (!cd.exists()) cd.mkdirs();
-          File sh = new File(cd, "feedback.png");
-          try (FileOutputStream f = new FileOutputStream(sh)) { f.write(Base64.decode(b64, Base64.DEFAULT)); }
-          Uri u = FileProvider.getUriForFile(MainActivity.this, getPackageName() + ".fileprovider", sh);
-          i.putExtra(Intent.EXTRA_STREAM, u); i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        }
-        startActivity(Intent.createChooser(i, "Send Feedback"));
-      } catch (Exception e) { runOnUiThread(() -> Toast.makeText(MainActivity.this, "Email Error: " + e.getMessage(), Toast.LENGTH_LONG).show()); }
+        String saved = saveFile(b64, fileName, mime);
+        byte[] data = Base64.decode(b64, Base64.DEFAULT);
+        File cacheF = new File(getCacheDir(), fileName);
+        try (FileOutputStream fos = new FileOutputStream(cacheF)) { fos.write(data); }
+        final Uri uri = FileProvider.getUriForFile(MainActivity.this, getPackageName() + ".fileprovider", cacheF);
+        final String safeMime = (mime != null && !mime.isEmpty()) ? mime : "*/*";
+        runOnUiThread(() -> {
+          Intent i = new Intent(Intent.ACTION_SEND);
+          i.setType(safeMime);
+          i.putExtra(Intent.EXTRA_STREAM, uri);
+          i.setClipData(ClipData.newRawUri(fileName, uri));
+          i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+          Intent ch = Intent.createChooser(i, "Share " + fileName);
+          ch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+          startActivity(ch);
+        });
+        return "✅ सेव (" + saved + ") व शेयर खुला!";
+      } catch (Exception e) { return "Share Error: " + e.getMessage(); }
     }
   }
 }
